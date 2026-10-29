@@ -21,6 +21,11 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
 
         var admin = await EnsureUser("admin", "admin@qlktx.local", "Quản trị viên Demo", "Demo@123", "system_admin");
         var studentUser = await EnsureUser("sv001", "sv001@qlktx.local", "Nguyễn Minh Anh", "Demo@123", "student");
+        if (!await db.asset_types.AnyAsync())
+        {
+            db.asset_types.AddRange(new asset_type { code = "BED", name = "Giường và nệm", description = "Tài sản phục vụ lưu trú" }, new asset_type { code = "FURN", name = "Nội thất", description = "Bàn ghế và tủ" }, new asset_type { code = "ELEC", name = "Thiết bị điện", description = "Thiết bị dùng chung" });
+            await db.SaveChangesAsync();
+        }
         if (!await db.buildings.AnyAsync())
         {
             var building = new building { code = "A", name = "Nhà A", address = "Khu nội trú · Cơ sở chính", description = "Dữ liệu minh họa", is_active = true, created_at = DateTime.Now };
@@ -42,6 +47,20 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
             db.students.Add(student);
             await db.SaveChangesAsync();
             db.room_registrations.Add(new room_registration { registration_code = "DK-2026-0001", student_id = student.id, preferred_building_id = building.id, preferred_room_type = "4 người", requested_start_date = DateOnly.FromDateTime(DateTime.Today.AddDays(14)), requested_end_date = DateOnly.FromDateTime(DateTime.Today.AddMonths(10)), submitted_at = DateTime.Now, status = "pending", note = "Dữ liệu demo — có thể duyệt trên màn hình Đăng ký phòng." });
+            await db.SaveChangesAsync();
+        }
+
+        var demoRoom = await db.rooms.OrderBy(x => x.id).FirstOrDefaultAsync();
+        var furniture = await db.asset_types.FirstOrDefaultAsync(x => x.code == "FURN");
+        if (demoRoom is not null && furniture is not null && !await db.room_assets.AnyAsync())
+        {
+            db.room_assets.AddRange(new room_asset { room_id = demoRoom.id, asset_type_id = furniture.id, asset_tag = "DEMO-TBL-01", name = "Bàn học", quantity = 2, condition_status = "good", acquired_at = DateOnly.FromDateTime(DateTime.Today.AddYears(-1)), last_checked_at = DateTime.Now, note = "Dữ liệu minh họa" }, new room_asset { room_id = demoRoom.id, asset_type_id = furniture.id, asset_tag = "DEMO-CHAIR-01", name = "Ghế", quantity = 4, condition_status = "good", acquired_at = DateOnly.FromDateTime(DateTime.Today.AddYears(-1)), last_checked_at = DateTime.Now, note = "Dữ liệu minh họa" });
+            await db.SaveChangesAsync();
+        }
+        var electricity = await db.services.FirstOrDefaultAsync(x => x.is_metered && x.code == "ELEC");
+        if (demoRoom is not null && electricity is not null && !await db.utility_meters.AnyAsync(x => x.room_id == demoRoom.id && x.service_id == electricity.id))
+        {
+            db.utility_meters.Add(new utility_meter { room_id = demoRoom.id, service_id = electricity.id, meter_code = "DEMO-" + demoRoom.room_number + "-E", installed_at = DateOnly.FromDateTime(DateTime.Today.AddMonths(-2)), is_active = true, note = "Đồng hồ minh họa; thay mã khi vận hành thật." });
             await db.SaveChangesAsync();
         }
     }

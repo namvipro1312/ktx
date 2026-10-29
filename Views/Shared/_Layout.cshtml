@@ -8,8 +8,10 @@
     {
         ("", "Tổng quan", "Công việc"), ("registrations", "Đăng ký phòng", "Công việc"), ("contracts", "Hợp đồng", "Công việc"),
         ("rooms", "Tòa và phòng", "Không gian"), ("buildings", "Tòa nhà", "Không gian"), ("services", "Dịch vụ", "Tiện ích"),
-        ("repairs", "Sửa chữa", "Tiện ích"), ("rules", "Nội quy", "Tiện ích"), ("payments", "Thanh toán", "Tài chính"), ("deposits", "Tiền đặt cọc", "Tài chính"),
-        ("reports", "Thống kê", "Tài chính"), ("users", "Tài khoản", "Hệ thống")
+        ("repairs", "Sửa chữa", "Tiện ích"), ("rules", "Nội quy", "Tiện ích"), ("guests", "Khách thăm", "Tiện ích"),
+        ("assets", "Tài sản phòng", "Không gian"), ("meters", "Đồng hồ", "Không gian"), ("utilities", "Điện nước", "Tài chính"),
+        ("violations", "Vi phạm nội quy", "Hệ thống"), ("payments", "Thanh toán", "Tài chính"), ("deposits", "Tiền đặt cọc", "Tài chính"),
+        ("refunds", "Hoàn tiền", "Tài chính"), ("reports", "Thống kê", "Tài chính"), ("notifications", "Thông báo", "Hệ thống"), ("users", "Tài khoản", "Hệ thống")
     };
 }
 <!DOCTYPE html>
@@ -36,7 +38,7 @@
         <nav class="side-nav" aria-label="Điều hướng chính">
             @foreach (var group in nav.GroupBy(x => x.Group))
             {
-                var visible = group.Where(x => isStudent ? x.Key is not ("reports" or "users" or "buildings") : isAdmin || (isAccountant && x.Key is ("" or "payments" or "deposits" or "reports")) || (isMaintenance && x.Key is ("" or "rooms" or "repairs"))).ToList();
+                var visible = group.Where(x => isStudent ? x.Key is not ("reports" or "users" or "buildings" or "assets" or "meters" or "utilities") : isAdmin || x.Key == "notifications" || (isAccountant && x.Key is ("" or "payments" or "deposits" or "refunds" or "reports")) || (isMaintenance && x.Key is ("" or "rooms" or "repairs" or "assets" or "meters" or "utilities"))).ToList();
                 if (visible.Count == 0) { continue; }
                 <div class="nav-group"><p class="nav-group-title">@group.Key</p>
                 @foreach (var item in visible)

@@ -8,7 +8,7 @@
     <div class="heading-meta"><span class="result-count">@Model.CountLabel</span>@if (Model.FormTitle is not null) { <a class="button button-primary" href="#create-form">@Model.FormTitle <span aria-hidden="true">＋</span></a> }</div>
 </section>
 <section class="data-section">
-    <div class="table-toolbar"><div class="table-title"><span class="route-mini-node"></span><h2>@(Model.Section == "registrations" ? "Danh sách hồ sơ" : Model.Section == "repairs" ? "Yêu cầu mới nhất" : "Bản ghi hiện có")</h2></div><span class="table-hint">Dữ liệu được lưu trực tiếp trên SQL Server</span></div>
+    <div class="table-toolbar"><div class="table-title"><span class="route-mini-node"></span><h2>@(Model.Section == "registrations" ? "Danh sách hồ sơ" : Model.Section == "repairs" ? "Yêu cầu mới nhất" : "Bản ghi hiện có")</h2></div><div class="table-controls"><label class="table-search"><span>Tìm trong danh sách</span><input type="search" data-table-search placeholder="Mã, tên hoặc nội dung" autocomplete="off" /></label><label class="table-filter"><span>Trạng thái</span><select data-table-status><option value="">Tất cả</option>@foreach (var state in Model.Rows.Select(x => x.State).Distinct().OrderBy(x => x)) { <option value="@state">@DormitoryController.StatusText(state)</option> }</select></label><span class="table-hint"><span data-visible-count>@Model.Rows.Count</span> / @Model.Rows.Count · SQL Server</span></div></div>
     @if (!Model.Rows.Any())
     {
         <div class="empty-state empty-table"><span class="empty-line"></span><strong>Chưa có dữ liệu trong mục này</strong><p>Khi phát sinh hồ sơ, bản ghi sẽ được hiển thị ở đây.</p></div>
@@ -18,11 +18,12 @@
         <div class="table-scroll"><table class="data-table"><thead><tr>@foreach (var column in Model.Columns) { <th scope="col">@column</th> }@if (Model.Rows.Any(x => x.Actions.Count > 0)) { <th scope="col" class="action-head">Thao tác</th> }</tr></thead><tbody>
         @foreach (var row in Model.Rows)
         {
-            <tr class="row-state-@row.State"><td class="record-cell">@row.Cells.ElementAtOrDefault(0)</td>@for (var cellIndex = 1; cellIndex < row.Cells.Count; cellIndex++) { <td>@if (cellIndex == row.Cells.Count - 1 && Model.Section != "reports") { <span class="status-pill state-@row.State.Replace("_", "-")">@row.Cells[cellIndex]</span> } else { @row.Cells[cellIndex] }</td> }
+            <tr class="row-state-@row.State" data-filter-row data-row-state="@row.State"><td class="record-cell">@row.Cells.ElementAtOrDefault(0)</td>@for (var cellIndex = 1; cellIndex < row.Cells.Count; cellIndex++) { <td>@if (cellIndex == row.Cells.Count - 1 && Model.Section != "reports") { <span class="status-pill state-@row.State.Replace("_", "-")">@row.Cells[cellIndex]</span> } else { @row.Cells[cellIndex] }</td> }
             @if (Model.Rows.Any(x => x.Actions.Count > 0)) { <td class="row-actions"><div class="action-stack">@foreach (var action in row.Actions) { <form asp-controller="Dormitory" asp-action="Process" method="post"><input type="hidden" name="section" value="@Model.Section" /><input type="hidden" name="id" value="@row.Id" /><input type="hidden" name="operation" value="@action.Operation" /><button class="row-action @(action.Primary ? "row-action-primary" : "")" type="submit">@action.Label</button></form> }</div></td> }
             </tr>
         }
         </tbody></table></div>
+        <p class="filter-empty" data-filter-empty hidden>Không có bản ghi nào khớp bộ lọc.</p>
     }
 </section>
 @if (Model.FormTitle is not null && Model.Fields.Count > 0)
@@ -31,10 +32,10 @@
         <form asp-controller="Dormitory" asp-action="Create" method="post" class="record-form"><input type="hidden" name="section" value="@Model.Section" />
             @foreach (var field in Model.Fields)
             {
-                <label class="field"><span>@field.Label</span>
+                <label class="field"><span>@field.Label@if (field.Required) { <i aria-hidden="true"> · bắt buộc</i> }</span>
                 @if (field.Type == "select") { <select name="@field.Name" required="@(field.Required ? "required" : null)"><option value="">Chọn @field.Label.ToLowerInvariant()</option>@foreach (var option in field.Options) { <option value="@option.Value">@option.Label</option> }</select> }
                 else if (field.Type == "textarea") { <textarea name="@field.Name" rows="4" required="@(field.Required ? "required" : null)"></textarea> }
-                else { <input name="@field.Name" type="@field.Type" required="@(field.Required ? "required" : null)" min="@(field.Type == "number" ? "0" : null)" /> }
+                else { <input name="@field.Name" type="@field.Type" required="@(field.Required ? "required" : null)" min="@(field.Type == "number" ? "0" : null)" step="@(field.Type == "number" ? "any" : null)" /> }
                 </label>
             }
             <div class="form-actions"><button class="button button-primary" type="submit">Lưu thông tin <span aria-hidden="true">→</span></button><span class="form-footnote">Các trường bắt buộc được đánh dấu trên biểu mẫu.</span></div>

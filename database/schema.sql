@@ -866,10 +866,17 @@ LEFT JOIN (
   GROUP BY invoice_id
 ) items ON items.invoice_id = i.id
 LEFT JOIN (
-  SELECT invoice_id, SUM(amount) AS paid_amount
-  FROM payments
-  WHERE status = 'completed'
-  GROUP BY invoice_id
+  SELECT p.invoice_id,
+         SUM(p.amount - COALESCE(r.refunded_amount, 0)) AS paid_amount
+  FROM payments p
+  LEFT JOIN (
+    SELECT payment_id, SUM(amount) AS refunded_amount
+    FROM payment_refunds
+    WHERE status = 'completed'
+    GROUP BY payment_id
+  ) r ON r.payment_id = p.id
+  WHERE p.status = 'completed'
+  GROUP BY p.invoice_id
 ) paid ON paid.invoice_id = i.id;
 
 GO

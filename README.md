@@ -1,6 +1,6 @@
 # QL Ký túc xá
 
-Ứng dụng web ASP.NET Core MVC quản lý vòng đời lưu trú: tài khoản và vai trò, tòa/phòng/giường, đăng ký và duyệt phòng, hợp đồng/nhận trả phòng, dịch vụ, sửa chữa, nội quy, hóa đơn/thanh toán và báo cáo.
+Ứng dụng web ASP.NET Core MVC quản lý vận hành ký túc xá cho sinh viên và nhân viên: tài khoản, chỗ ở, lưu trú, dịch vụ, vận hành phòng, tài chính và báo cáo.
 
 ## Công nghệ
 
@@ -51,10 +51,15 @@ Mật khẩu được lưu dưới dạng hash. Thay thông tin demo, dữ liệ
 - Quản lý tòa/phòng/giường và trạng thái bảo trì.
 - Sinh viên gửi đăng ký; ban quản lý duyệt hoặc từ chối. Khi duyệt, hệ thống giữ giường và tạo hợp đồng nháp; ghi nhận ký mới kích hoạt hợp đồng.
 - Theo dõi nhận phòng/trả phòng, thu và đối chiếu tiền đặt cọc trước khi kích hoạt hợp đồng, dịch vụ theo hợp đồng, yêu cầu sửa chữa, nội quy và xác nhận đã đọc.
-- Lập hóa đơn; sinh viên tạo yêu cầu thanh toán chờ kế toán xác nhận giao dịch thực nhận; xem báo cáo từ các SQL view.
+- Khách thăm: đăng ký, duyệt/từ chối, ghi nhận giờ vào và ra; sinh viên được hủy yêu cầu chưa duyệt.
+- Tài sản: kiểm kê theo phòng, nhóm tài sản, số lượng và tình trạng; đồng hồ điện nước gắn phòng/dịch vụ và ghi nhận chỉ số theo ngày.
+- Điện nước: tính tiêu thụ theo chênh lệch chỉ số, tính tiền theo giá dịch vụ và phân bổ cho hợp đồng đang ở; khoản sử dụng được đưa vào kỳ lập hóa đơn.
+- Vi phạm: lập biên bản, theo dõi mức phạt và xử lý, tạo khoản phạt trên hóa đơn; thông báo riêng cho sinh viên.
+- Lập hóa đơn; sinh viên tạo yêu cầu thanh toán chờ kế toán xác nhận giao dịch thực nhận. Có yêu cầu hoàn tiền theo từng khoản thu, đối soát số tiền còn lại và ghi nhận sau khi hoàn thực tế.
+- Hộp thư thông báo riêng, gửi thông báo trực tiếp, tìm kiếm/lọc trong danh sách và báo cáo từ SQL views.
 - Tài khoản có vai trò nhân viên sửa chữa và kế toán với phạm vi màn hình/thao tác riêng.
 
-Ứng dụng chưa tích hợp cổng thanh toán, email/SMS, ký số, kho tài liệu, sao lưu, quản lý chỉ số điện nước hoặc quy trình hoàn/khấu trừ cọc khi trả phòng. Nút xác nhận thanh toán chỉ ghi nhận nghiệp vụ nội bộ; phải đối chiếu tiền thực nhận trước khi xác nhận.
+Ứng dụng chưa tích hợp cổng thanh toán, email/SMS, ký số, lưu trữ tài liệu, sao lưu tự động hoặc kết nối thiết bị đo tự động. Chỉ số điện nước được nhập thủ công. Nút xác nhận thanh toán và hoàn tiền chỉ ghi nhận nghiệp vụ nội bộ; phải đối chiếu giao dịch thực nhận/hoàn tiền thực tế trước khi xác nhận. Hoàn/khấu trừ tiền đặt cọc khi trả phòng cần được đối soát riêng.
 
 ## Cấu trúc
 
