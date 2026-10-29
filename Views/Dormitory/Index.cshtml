@@ -1,0 +1,41 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = Model.IsStudent ? "Không gian của bạn" : "Tổng quan vận hành";
+}
+<section class="page-heading dashboard-heading">
+    <div><h1>@(Model.IsStudent ? $"Chào {Model.DisplayName.Split(' ').LastOrDefault()}" : "Tổng quan vận hành")</h1><p class="page-description">@(Model.IsStudent ? "Theo dõi hành trình lưu trú và các việc bạn cần hoàn tất." : "Theo dõi luồng hồ sơ, chỗ ở và việc cần xử lý trong hôm nay.")</p></div>
+    @if (Model.IsStudent) { <a class="button button-primary" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="registrations">Đăng ký phòng <span aria-hidden="true">↗</span></a> }
+    else { <a class="button button-primary" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="registrations">Mở hàng chờ <span aria-hidden="true">↗</span></a> }
+</section>
+
+<section class="route-panel" aria-label="@(Model.IsStudent ? "Hành trình lưu trú" : "Luồng vận hành")">
+    <div class="route-panel-head"><div><h2>@(Model.IsStudent ? "Hành trình lưu trú" : "Luồng nội trú")</h2><p>@(Model.IsStudent ? "Các mốc liên quan đến hồ sơ của bạn." : "Bấm một điểm để mở danh sách công việc tương ứng.")</p></div><span class="route-legend"><i></i> Việc đang theo dõi</span></div>
+    <div class="route-map" role="list">
+        @for (var i = 0; i < Model.Stations.Count; i++)
+        {
+            var station = Model.Stations[i];
+            var href = Url.Action("Workspace", "Dormitory", new { section = station.Key, station = station.Key });
+            <a class="route-station route-@station.Color" role="listitem" href="@href" aria-label="@station.Label, @station.Count mục">
+                <span class="station-node"><span></span></span><span class="station-label">@station.Label</span><strong class="station-count">@station.Count.ToString("00")</strong>
+            </a>
+        }
+    </div>
+</section>
+
+<section class="dashboard-lower">
+    <div class="task-section">
+        <div class="section-heading"><div><h2>@(Model.IsStudent ? "Việc của bạn" : "Hàng chờ cần chú ý")</h2><p>@(Model.IsStudent ? "Trạng thái mới nhất từ các yêu cầu của bạn." : "Các hồ sơ đến trước và sự cố cần theo dõi.")</p></div><a class="quiet-link" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="registrations">Xem đăng ký <span aria-hidden="true">→</span></a></div>
+        <div class="task-list">
+            @if (!Model.Tasks.Any()) { <div class="empty-state"><span class="empty-line"></span><strong>Chưa có việc cần xử lý</strong><p>Các cập nhật mới sẽ xuất hiện tại đây.</p></div> }
+            @foreach (var task in Model.Tasks)
+            {
+                <a class="task-row" href="@task.Href"><span class="task-route-dot"></span><span class="task-main"><strong>@task.Title</strong><small>@task.Detail</small></span><span class="status-pill @(task.State.Contains("Chờ") || task.State.Contains("Cần") ? "status-pending" : task.State.Contains("Đã") ? "status-done" : "status-active")">@task.State</span><span class="task-arrow" aria-hidden="true">↗</span></a>
+            }
+        </div>
+    </div>
+    <aside class="summary-column">
+        <div class="summary-block"><span class="summary-label">GIƯỜNG CÒN TRỐNG</span><strong>@Model.AvailableBeds.ToString("00")</strong><p>Giường có thể phân trong toàn khu.</p><a href="@Url.Action("Workspace", "Dormitory", new { section = "rooms" })">Xem phòng <span aria-hidden="true">→</span></a></div>
+        <div class="summary-block summary-finance"><span class="summary-label">SỐ DƯ CHƯA ĐỐI SOÁT</span><strong>@Model.Outstanding.ToString("N0")<small> ₫</small></strong><p>@(Model.IsStudent ? "Số tiền còn lại trên hóa đơn của bạn." : "Tổng số dư còn lại từ các hóa đơn.")</p><a href="@Url.Action("Workspace", "Dormitory", new { section = "payments" })">Mở thanh toán <span aria-hidden="true">→</span></a></div>
+        <div class="trust-note"><span class="trust-symbol" aria-hidden="true">i</span><span>Số liệu minh họa để chạy thử. Hãy thay bằng dữ liệu của đơn vị trước khi vận hành.</span></div>
+    </aside>
+</section>

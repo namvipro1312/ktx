@@ -1,0 +1,3 @@
+@model QLKTX.Models.ErrorViewModel
+@{ ViewData["Title"] = "Có lỗi xảy ra"; }
+<section class="denied-card"><span class="denied-mark">!</span><h1>Chưa thể hoàn tất yêu cầu</h1><p>Hệ thống gặp lỗi khi xử lý trang này. Hãy thử lại sau hoặc liên hệ quản trị viên.</p>@if (Model.ShowRequestId) { <p>Mã yêu cầu: <code>@Model.RequestId</code></p> }<a class="button button-primary" asp-controller="Dormitory" asp-action="Index">Về trang tổng quan</a></section>

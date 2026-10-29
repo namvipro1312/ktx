@@ -1,0 +1,15 @@
+**/bin/
+**/obj/
+.vs/
+.idea/
+*.user
+*.suo
+appsettings.Development.json
+.impeccable/questions/*.log
+.impeccable/questions/
+.impeccable/mocks/
+.impeccable/dashboard-brief.md
+.impeccable/review/
+.impeccable/build/
+.impeccable/config.local.json
+wwwroot/lib/

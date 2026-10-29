@@ -1,0 +1,80 @@
+@{
+    var isStudent = User.IsInRole("student") && !User.IsInRole("system_admin") && !User.IsInRole("dorm_manager");
+    var isAdmin = User.IsInRole("system_admin") || User.IsInRole("dorm_manager");
+    var isAccountant = User.IsInRole("accountant");
+    var isMaintenance = User.IsInRole("maintenance_staff");
+    var active = ViewData["ActiveSection"]?.ToString() ?? "";
+    var nav = new (string Key, string Label, string Group)[]
+    {
+        ("", "Tổng quan", "Công việc"), ("registrations", "Đăng ký phòng", "Công việc"), ("contracts", "Hợp đồng", "Công việc"),
+        ("rooms", "Tòa và phòng", "Không gian"), ("buildings", "Tòa nhà", "Không gian"), ("services", "Dịch vụ", "Tiện ích"),
+        ("repairs", "Sửa chữa", "Tiện ích"), ("rules", "Nội quy", "Tiện ích"), ("payments", "Thanh toán", "Tài chính"), ("deposits", "Tiền đặt cọc", "Tài chính"),
+        ("reports", "Thống kê", "Tài chính"), ("users", "Tài khoản", "Hệ thống")
+    };
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#14243d" />
+    <title>@ViewData["Title"] · Ký túc xá</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="@(User.Identity?.IsAuthenticated == true ? "app-shell" : "auth-shell")">
+@if (User.Identity?.IsAuthenticated == true)
+{
+    <aside class="sidebar" id="sidebar">
+        <a class="brand" asp-controller="Dormitory" asp-action="Index" aria-label="Ký túc xá, về tổng quan">
+            <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+            <span><strong>NỘI TRÚ</strong><small>QUẢN LÝ KHU NỘI TRÚ</small></span>
+        </a>
+        <div class="campus-tag"><span class="live-dot"></span><span>Cơ sở chính</span><span class="campus-code">HN</span></div>
+        <nav class="side-nav" aria-label="Điều hướng chính">
+            @foreach (var group in nav.GroupBy(x => x.Group))
+            {
+                var visible = group.Where(x => isStudent ? x.Key is not ("reports" or "users" or "buildings") : isAdmin || (isAccountant && x.Key is ("" or "payments" or "deposits" or "reports")) || (isMaintenance && x.Key is ("" or "rooms" or "repairs"))).ToList();
+                if (visible.Count == 0) { continue; }
+                <div class="nav-group"><p class="nav-group-title">@group.Key</p>
+                @foreach (var item in visible)
+                {
+                    var href = string.IsNullOrEmpty(item.Key) ? Url.Action("Index", "Dormitory") : Url.Action("Workspace", "Dormitory", new { section = item.Key });
+                    var current = active == item.Key && (item.Key.Length > 0 || ViewContext.RouteData.Values["action"]?.ToString() == "Index");
+                    <a class="nav-link @(current ? "is-active" : "")" href="@href" aria-current="@(current ? "page" : null)">
+                        <span class="nav-glyph glyph-@item.Key" aria-hidden="true"></span><span>@item.Label</span>
+                    </a>
+                }
+                </div>
+            }
+        </nav>
+        <div class="sidebar-foot">
+            <span class="demo-note"><span class="demo-dot"></span> Dữ liệu trình diễn</span>
+            <div class="user-mini"><span class="avatar">@(User.Identity?.Name?.Split(' ').LastOrDefault()?.FirstOrDefault() ?? 'Q')</span><span class="user-mini-info"><strong>@User.Identity?.Name</strong><small>@(isStudent ? "Sinh viên" : "Ban quản lý")</small></span></div>
+        </div>
+    </aside>
+    <div class="mobile-scrim" id="scrim"></div>
+    <div class="workspace-shell">
+        <header class="topbar">
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Mở điều hướng" aria-expanded="false"><span></span><span></span></button>
+            <div class="crumb"><span>Ký túc xá</span><span class="crumb-slash">/</span><strong>@(ViewData["Title"] ?? "Tổng quan")</strong></div>
+            <div class="topbar-actions"><span class="today">@DateTime.Today.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))</span><span class="topbar-divider"></span><span class="avatar avatar-small">@(User.Identity?.Name?.Split(' ').LastOrDefault()?.FirstOrDefault() ?? 'Q')</span><form asp-controller="Account" asp-action="Logout" method="post"><button class="text-button" type="submit">Đăng xuất</button></form></div>
+        </header>
+        <main class="main-content" id="main-content">
+            @if (TempData["Notice"] is string notice) { <div class="notice notice-success" role="status"><span class="notice-mark">✓</span><span>@notice</span><button type="button" class="notice-close" aria-label="Đóng thông báo">×</button></div> }
+            @if (TempData["Error"] is string error) { <div class="notice notice-error" role="alert"><span class="notice-mark">!</span><span>@error</span><button type="button" class="notice-close" aria-label="Đóng thông báo">×</button></div> }
+            @RenderBody()
+        </main>
+        <footer class="app-footer"><span>Ký túc xá · Hệ thống quản lý lưu trú</span><span>Phiên bản phát triển</span></footer>
+    </div>
+}
+else
+{
+    <main class="auth-frame">@RenderBody()</main>
+}
+<script src="~/js/site.js" asp-append-version="true"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
