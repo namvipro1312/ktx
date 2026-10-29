@@ -14,7 +14,7 @@
 1. Cài .NET 9 SDK và SQL Server. Tạo CSDL bằng script mới trên một database trống:
 
    ```powershell
-   sqlcmd -S localhost -E -i database/schema.sql
+   sqlcmd -S localhost -E -i database/SQLServer/schema.sql
    ```
 
 2. Cấu hình kết nối bằng User Secrets (không đặt mật khẩu trong Git):
@@ -61,12 +61,35 @@ Mật khẩu được lưu dưới dạng hash. Thay thông tin demo, dữ liệ
 
 Ứng dụng chưa tích hợp cổng thanh toán, email/SMS, ký số, lưu trữ tài liệu, sao lưu tự động hoặc kết nối thiết bị đo tự động. Chỉ số điện nước được nhập thủ công. Nút xác nhận thanh toán và hoàn tiền chỉ ghi nhận nghiệp vụ nội bộ; phải đối chiếu giao dịch thực nhận/hoàn tiền thực tế trước khi xác nhận. Hoàn/khấu trừ tiền đặt cọc khi trả phòng cần được đối soát riêng.
 
-## Cấu trúc
+## Cấu trúc dự án
 
-- `Controllers/`, `Views/`, `wwwroot/`: web MVC
-- `Data/`: context và entity được scaffold từ SQL Server
-- `database/schema.sql`: schema chuẩn SQL Server và các view báo cáo
-- `database/schema_mysql.sql`: bản tham khảo MySQL cũ
+Tổ chức theo MVC nhiều lớp và chia thư mục con theo chức năng, tương tự cách nhóm module trong project Phone Store:
+
+```text
+Controllers/
+├── Identity/       # Đăng nhập và tài khoản
+├── Dashboard/      # Trang tổng quan
+└── Dormitory/      # Nghiệp vụ ký túc xá
+Data/
+├── Context/        # Entity Framework DbContext
+└── Entities/       # Entity SQL Server
+Models/Shared/      # Model dùng chung
+ViewModels/
+└── Dormitory/      # ViewModel các màn quản lý KTX
+Services/Seeding/   # Dữ liệu demo môi trường Development
+Views/
+├── Account/        # View đăng nhập
+├── Home/           # View trang chung
+├── Dormitory/      # View nghiệp vụ KTX
+└── Shared/         # Layout và thành phần dùng lại
+wwwroot/            # CSS, JavaScript, favicon và tài nguyên tĩnh
+database/
+├── SQLServer/      # Schema chính SQL Server
+└── Legacy/         # Schema MySQL tham khảo cũ
+```
+
+- `database/SQLServer/schema.sql`: schema chuẩn SQL Server và các view báo cáo
+- `database/Legacy/schema_mysql.sql`: bản tham khảo MySQL cũ
 - `PRODUCT.md`, `.impeccable/surfaces/dashboard-index.md`: product truth và brief thiết kế
 
 ## Kiểm tra

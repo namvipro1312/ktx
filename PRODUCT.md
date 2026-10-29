@@ -36,7 +36,7 @@ The initial feature scope is organized into five work groups: account/login and 
 
 ## Evidence on Hand
 
-- An existing SQL Server schema at `database/schema.sql` and a MySQL reference schema at `database/schema_mysql.sql`.
+- An existing SQL Server schema at `database/SQLServer/schema.sql` and a MySQL reference schema at `database/Legacy/schema_mysql.sql`.
 - No supplied branding, logo, real resident records, or production metrics. Use clearly identified synthetic demo content and do not imply it is real.
 
 ## Product Principles

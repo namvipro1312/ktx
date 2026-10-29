@@ -1,6 +1,6 @@
 # CSDL quản lý ký túc xá – SQL Server
 
-CSDL `qlktx` đã được tạo trên SQL Server cục bộ `Admin-PC` (SQL Server 2022 Developer Edition). Script T-SQL chính nằm ở `schema.sql`.
+CSDL `qlktx` đã được tạo trên SQL Server cục bộ `Admin-PC` (SQL Server 2022 Developer Edition). Script T-SQL chính nằm ở `SQLServer/schema.sql`.
 
 ## Kết nối và chạy lại
 
@@ -10,9 +10,9 @@ Máy này dùng Windows Authentication; có thể kiểm tra bằng:
 sqlcmd -S localhost -E -d qlktx -Q "SELECT DB_NAME()"
 ```
 
-`schema.sql` là script cài đặt cho CSDL mới. Không chạy lại nguyên trạng trên CSDL đã có bảng; thay đổi tiếp theo nên được tạo thành migration riêng để giữ dữ liệu.
+`SQLServer/schema.sql` là script cài đặt cho CSDL mới. Không chạy lại nguyên trạng trên CSDL đã có bảng; thay đổi tiếp theo nên được tạo thành migration riêng để giữ dữ liệu.
 
-`schema_mysql.sql` là bản MySQL cũ, không dùng cho SQL Server.
+`Legacy/schema_mysql.sql` là bản MySQL cũ, không dùng cho SQL Server.
 
 ## Phạm vi
 
