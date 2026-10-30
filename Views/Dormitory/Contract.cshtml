@@ -1,0 +1,387 @@
+@model QLKTX.Data.Entities.contract
+@{
+    ViewData["Title"] = $"Hợp đồng {Model.contract_code}";
+    var depositNet = Model.deposit_transactions.Where(d => d.status == "completed").Sum(d => d.transaction_type == "collected" ? d.amount : -d.amount);
+}
+
+<div class="contract-page-wrapper">
+    <div class="contract-toolbar no-print">
+        <a class="button button-outline" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="contracts">
+            ← Quay lại danh sách
+        </a>
+        <div class="toolbar-actions">
+            <button class="button button-primary" type="button" onclick="window.print()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                In hợp đồng / Lưu PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="contract-paper">
+        <header class="contract-header">
+            <div class="national-motto">
+                <h3>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h3>
+                <p>Độc lập - Tự do - Hạnh phúc</p>
+                <div class="motto-divider"></div>
+            </div>
+            
+            <div class="contract-title-block">
+                <h1>HỢP ĐỒNG LƯU TRÚ KÝ TÚC XÁ</h1>
+                <p class="contract-code-tag">Số: <strong>@Model.contract_code</strong> / HĐ-KTX</p>
+                <p class="contract-date-line">Hôm nay, ngày @DateTime.Today.Day tháng @DateTime.Today.Month năm @DateTime.Today.Year, tại Ban Quản lý Ký túc xá.</p>
+            </div>
+        </header>
+
+        <section class="contract-parties">
+            <div class="party-block">
+                <h4>BÊN CHO THUÊ (BÊN A): BAN QUẢN LÝ KÝ TÚC XÁ</h4>
+                <div class="party-grid">
+                    <div><strong>Đơn vị:</strong> Trung tâm Quản lý Khu Ký túc xá Sinh viên</div>
+                    <div><strong>Cơ sở:</strong> Trụ sở chính - Phân viện Hà Nội</div>
+                    <div><strong>Điện thoại:</strong> (024) 3869 1234</div>
+                    <div><strong>Email:</strong> bqlktx@university.edu.vn</div>
+                </div>
+            </div>
+
+            <div class="party-block">
+                <h4>BÊN THUÊ CHỖ Ở (BÊN B): SINH VIÊN</h4>
+                <div class="party-grid">
+                    <div><strong>Họ và tên:</strong> @Model.student.user.full_name</div>
+                    <div><strong>Mã số sinh viên:</strong> @Model.student.student_code</div>
+                    <div><strong>Giới tính:</strong> @(Model.student.gender == "male" ? "Nam" : Model.student.gender == "female" ? "Nữ" : "Chưa cập nhật")</div>
+                    <div><strong>Email:</strong> @(Model.student.user.email ?? "—")</div>
+                    <div><strong>Số điện thoại:</strong> @(Model.student.user.phone ?? "—")</div>
+                    <div><strong>Người liên hệ khẩn cấp:</strong> @(Model.student.emergency_contact_name ?? "Phụ huynh") (@(Model.student.emergency_contact_phone ?? "—"))</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="contract-terms">
+            <p>Hai bên thống nhất ký kết hợp đồng lưu trú ký túc xá với các điều khoản cụ thể sau đây:</p>
+
+            <div class="term-article">
+                <h5>Điều 1: Vị trí phòng ở và chỗ ở được bố trí</h5>
+                <ul>
+                    <li><strong>Tòa nhà:</strong> @Model.bed.room.building.name (@Model.bed.room.building.code)</li>
+                    <li><strong>Phòng ở:</strong> Phòng @Model.bed.room.room_number (Tầng @(Model.bed.room.floor_number?.ToString() ?? "—"))</li>
+                    <li><strong>Loại phòng:</strong> @Model.bed.room.room_type (Sức chứa: @Model.bed.room.capacity người)</li>
+                    <li><strong>Vị trí giường cá nhân:</strong> Giường số <strong>@Model.bed.bed_number</strong></li>
+                </ul>
+            </div>
+
+            <div class="term-article">
+                <h5>Điều 2: Thời hạn hợp đồng</h5>
+                <p>Hợp đồng có hiệu lực từ ngày <strong>@Model.start_date.ToString("dd/MM/yyyy")</strong> đến hết ngày <strong>@Model.end_date.ToString("dd/MM/yyyy")</strong>. Khi hết hạn hợp đồng, nếu sinh viên có nhu cầu tiếp tục lưu trú phải làm đơn xin gia hạn trước 15 ngày.</p>
+            </div>
+
+            <div class="term-article">
+                <h5>Điều 3: Giá thuê chỗ ở và tiền đặt cọc</h5>
+                <ul>
+                    <li><strong>Đơn giá thuê:</strong> <strong>@Model.monthly_price.ToString("N0") VNĐ</strong> / tháng / sinh viên.</li>
+                    <li><strong>Tiền đặt cọc trách nhiệm tài sản:</strong> <strong>@Model.deposit_amount.ToString("N0") VNĐ</strong>.</li>
+                    <li><strong>Tình trạng cọc đã đối soát:</strong> <span class="deposit-status @(depositNet >= Model.deposit_amount ? "status-success" : "status-warn")">@(depositNet >= Model.deposit_amount ? $"Đã hoàn tất ({depositNet:N0} VNĐ)" : $"Còn thiếu (Đã nộp: {depositNet:N0} VNĐ / Yêu cầu: {Model.deposit_amount:N0} VNĐ)")</span></li>
+                    <li>Tiền cọc được hoàn trả 100% cho Bên B sau khi thanh lý hợp đồng, trả phòng và trừ hao mòn/hư hỏng thiết bị (nếu có).</li>
+                </ul>
+            </div>
+
+            <div class="term-article">
+                <h5>Điều 4: Quyền và Nghĩa vụ của Bên B (Sinh viên)</h5>
+                <ol>
+                    <li>Được sử dụng giường nằm cá nhân và các trang thiết bị tiện nghi tiêu chuẩn trong phòng.</li>
+                    <li>Chấp hành nghiêm chỉnh Nội quy Ký túc xá, quy định PCCC và giờ giới nghiêm (đóng cửa lúc 23h00).</li>
+                    <li>Không được tự ý chuyển nhượng, cho thuê lại giường hoặc cho người lạ vào phòng ở lại qua đêm khi chưa được BQL đồng ý.</li>
+                    <li>Thanh toán đầy đủ, đúng hạn tiền phòng và tiền điện nước bổ đầu người hàng tháng.</li>
+                    <li>Giữ gìn vệ sinh chung, bảo quản tài sản công cộng; tự chịu trách nhiệm bồi hoàn nếu làm hỏng hóc hoặc mất mát thiết bị.</li>
+                </ol>
+            </div>
+
+            <div class="term-article">
+                <h5>Điều 5: Biên bản bàn giao tài sản khi nhận phòng (Check-in Checklist)</h5>
+                <div class="checkin-box">
+                    @if (Model.occupancy_record != null)
+                    {
+                        <div class="checkin-status checkin-done">
+                            <span class="badge badge-success">✓ ĐÃ HOÀN TẤT BÀN GIAO</span>
+                            <p><strong>Thời điểm nhận phòng:</strong> @Model.occupancy_record.checked_in_at?.ToString("dd/MM/yyyy HH:mm")</p>
+                            <p><strong>Hiện trạng ghi nhận:</strong> @(Model.occupancy_record.checkin_condition ?? "Tài sản đầy đủ, phòng sạch sẽ, chìa khóa đã bàn giao.")</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="checkin-status checkin-pending">
+                            <span class="badge badge-pending">⏳ CHỜ LÀM THỦ TỤC NHẬN PHÒNG</span>
+                            <p>Sinh viên kiểm đếm tài sản phòng (Giường, tủ đồ, quạt, công tơ điện nước đầu kỳ, chìa khóa) trực tiếp tại phòng và ký xác nhận nhận phòng.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </section>
+
+        <footer class="contract-signatures">
+            <div class="signature-box">
+                <p class="sig-title">ĐẠI DIỆN BÊN CHO THUÊ (BÊN A)</p>
+                <p class="sig-sub">Ban Quản lý Ký túc xá</p>
+                <div class="stamp-space">
+                    <div class="digital-stamp">
+                        <span>BAN QUẢN LÝ KTX</span>
+                        <small>XÁC NHẬN HỆ THỐNG</small>
+                    </div>
+                </div>
+                <p class="sig-name">Đã phê duyệt điện tử</p>
+            </div>
+
+            <div class="signature-box">
+                <p class="sig-title">ĐẠI DIỆN BÊN THUÊ (BÊN B)</p>
+                <p class="sig-sub">Sinh viên nội trú ký cam kết</p>
+                <div class="stamp-space">
+                    @if (Model.signed_at != null)
+                    {
+                        <div class="digital-sig-badge">
+                            <span class="check-icon">✓</span>
+                            <span>KÝ ĐIỆN TỬ BỞI</span>
+                            <strong>@Model.student.user.full_name</strong>
+                            <small>@Model.signed_at?.ToString("dd/MM/yyyy HH:mm")</small>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="sig-empty">Chưa xác nhận ký cam kết</div>
+                    }
+                </div>
+                <p class="sig-name">@Model.student.user.full_name</p>
+            </div>
+        </footer>
+    </div>
+</div>
+
+<style>
+.contract-page-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+}
+.contract-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 12px 18px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+.button-outline {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.button-outline:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+.contract-paper {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    padding: 55px 65px;
+    color: #1e293b;
+    font-family: "Times New Roman", Times, serif;
+    font-size: 15px;
+    line-height: 1.6;
+}
+.national-motto {
+    text-align: center;
+    margin-bottom: 25px;
+}
+.national-motto h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: bold;
+    letter-spacing: 0.04em;
+}
+.national-motto p {
+    margin: 4px 0 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+.motto-divider {
+    width: 140px;
+    height: 1.5px;
+    background: #1e293b;
+    margin: 6px auto 0;
+}
+.contract-title-block {
+    text-align: center;
+    margin: 30px 0 35px;
+}
+.contract-title-block h1 {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0 0 8px;
+    color: #0f172a;
+}
+.contract-code-tag {
+    font-size: 14px;
+    color: #475569;
+    margin: 0 0 6px;
+}
+.contract-date-line {
+    font-style: italic;
+    font-size: 14px;
+    color: #64748b;
+}
+.party-block {
+    margin-bottom: 22px;
+    padding: 16px 20px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+.party-block h4 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #0f172a;
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 6px;
+}
+.party-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 20px;
+    font-size: 14px;
+}
+.contract-terms {
+    margin-top: 25px;
+}
+.term-article {
+    margin-bottom: 18px;
+}
+.term-article h5 {
+    margin: 0 0 6px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #0f172a;
+}
+.term-article ul, .term-article ol {
+    margin: 4px 0 0 20px;
+    padding: 0;
+}
+.term-article li {
+    margin-bottom: 4px;
+}
+.checkin-box {
+    margin-top: 8px;
+    padding: 14px 18px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+}
+.checkin-status p {
+    margin: 4px 0 0;
+    font-size: 13.5px;
+}
+.badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    font-family: sans-serif;
+    margin-bottom: 6px;
+}
+.badge-success { background: #dcfce7; color: #166534; }
+.badge-pending { background: #fef3c7; color: #92400e; }
+.deposit-status {
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.deposit-status.status-success { background: #dcfce7; color: #166534; }
+.deposit-status.status-warn { background: #fee2e2; color: #991b1b; }
+.contract-signatures {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 45px;
+    padding-top: 20px;
+}
+.signature-box {
+    text-align: center;
+    width: 45%;
+}
+.sig-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin: 0;
+}
+.sig-sub {
+    font-style: italic;
+    font-size: 13px;
+    margin: 2px 0 0;
+    color: #64748b;
+}
+.stamp-space {
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.digital-stamp {
+    border: 2px dashed #dc2626;
+    color: #dc2626;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 12px;
+    text-align: center;
+    transform: rotate(-6deg);
+    font-family: sans-serif;
+}
+.digital-stamp small {
+    display: block;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+}
+.digital-sig-badge {
+    border: 2px solid #2563eb;
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: sans-serif;
+}
+.digital-sig-badge strong {
+    font-size: 13px;
+}
+.sig-empty {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 13px;
+}
+.sig-name {
+    font-weight: bold;
+    font-size: 15px;
+    margin: 0;
+}
+
+@@media print {
+    .no-print { display: none !important; }
+    .contract-page-wrapper { max-width: 100% !important; padding: 0 !important; }
+    .contract-paper { border: none !important; box-shadow: none !important; padding: 20px !important; }
+    .sidebar, .topbar, .app-footer { display: none !important; }
+    .workspace-shell { margin-left: 0 !important; }
+}
+</style>
