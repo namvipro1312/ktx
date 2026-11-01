@@ -7,8 +7,115 @@
     <div><h1>@Model.Title</h1><p class="page-description">@Model.Description</p></div>
     <div class="heading-meta"><span class="result-count">@Model.CountLabel</span>@if (Model.FormTitle is not null) { <a class="button button-primary" href="#create-form">@Model.FormTitle <span aria-hidden="true">＋</span></a> }</div>
 </section>
-<section class="data-section">
-    <div class="table-toolbar"><div class="table-title"><span class="route-mini-node"></span><h2>@(Model.Section == "registrations" ? "Danh sách hồ sơ" : Model.Section == "repairs" ? "Yêu cầu mới nhất" : "Bản ghi hiện có")</h2></div><div class="table-controls"><label class="table-search"><span>Tìm trong danh sách</span><input type="search" data-table-search placeholder="Mã, tên hoặc nội dung" autocomplete="off" /></label><label class="table-filter"><span>Trạng thái</span><select data-table-status><option value="">Tất cả</option>@foreach (var state in Model.Rows.Select(x => x.State).Distinct().OrderBy(x => x)) { <option value="@state">@DormitoryController.StatusText(state)</option> }</select></label><span class="table-hint"><span data-visible-count>@Model.Rows.Count</span> / @Model.Rows.Count · SQL Server</span></div></div>
+
+@if (Model.Section == "rooms" && Model.RoomGroups.Count > 0)
+{
+    <section class="matrix-section">
+        <div class="matrix-header">
+            <div>
+                <h2>Sơ đồ phòng trực quan (Matrix Floorplan)</h2>
+                <p>Theo dõi tình trạng phòng và từng vị trí giường trực quan theo từng tòa và tầng.</p>
+            </div>
+            <div class="matrix-legend">
+                <span class="legend-item"><i class="dot dot-avail"></i> Còn chỗ trống</span>
+                <span class="legend-item"><i class="dot dot-full"></i> Đã kín chỗ</span>
+                <span class="legend-item"><i class="dot dot-maint"></i> Đang bảo trì</span>
+            </div>
+        </div>
+
+        @foreach (var building in Model.RoomGroups)
+        {
+            <div class="building-matrix-card">
+                <div class="building-matrix-head">
+                    <span class="building-tag">TÒA @building.BuildingCode</span>
+                    <h3>@building.BuildingName</h3>
+                </div>
+
+                @foreach (var floor in building.Floors)
+                {
+                    <div class="floor-matrix-row">
+                        <div class="floor-badge">
+                            <strong>TẦNG @floor.FloorNumber</strong>
+                        </div>
+                        <div class="floor-rooms-grid">
+                            @foreach (var room in floor.Rooms)
+                            {
+                                var isMaintenance = room.Status == "maintenance";
+                                var isFull = room.AvailableBeds == 0;
+                                var cardState = isMaintenance ? "state-maint" : isFull ? "state-full" : "state-avail";
+
+                                <div class="room-box @cardState">
+                                    <div class="room-box-top">
+                                        <div class="room-id">
+                                            <span class="room-dot"></span>
+                                            <strong>@room.RoomNumber</strong>
+                                        </div>
+                                        <span class="room-pill">
+                                            @(isMaintenance ? "Bảo trì" : isFull ? "Kín chỗ" : $"{room.AvailableBeds}/{room.Capacity} trống")
+                                        </span>
+                                    </div>
+                                    <div class="room-info">
+                                        <span>@room.RoomType</span>
+                                        <span class="room-price">@room.MonthlyPrice.ToString("N0") ₫</span>
+                                    </div>
+                                    <div class="beds-mini-grid">
+                                        @foreach (var bed in room.Beds)
+                                        {
+                                            var isBedAvail = bed.Status == "available";
+                                            <span class="bed-chip @(isBedAvail ? "bed-avail" : "bed-occ")" title="Giường @bed.BedNumber: @(isBedAvail ? "Còn trống" : "Đã có sinh viên ở")">
+                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
+                                                @bed.BedNumber
+                                            </span>
+                                        }
+                                    </div>
+                                    @if (User.IsInRole("system_admin") || User.IsInRole("dorm_manager"))
+                                    {
+                                        <div class="room-box-actions">
+                                            <form asp-controller="Dormitory" asp-action="Process" method="post" style="display:inline;">
+                                                <input type="hidden" name="section" value="rooms" />
+                                                <input type="hidden" name="id" value="@room.Id" />
+                                                <input type="hidden" name="operation" value="@(isMaintenance ? "room-open" : "room-maintenance")" />
+                                                <button class="btn-toggle-room" type="submit">
+                                                    @(isMaintenance ? "Mở phòng" : "Bảo trì")
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+}
+
+@if (!Model.RoomGroups.Any()) {
+    <section class="data-section">
+    <div class="table-toolbar">
+        <div class="table-title">
+            <span class="route-mini-node"></span>
+            <h2>@(Model.Section == "registrations" ? "Danh sách hồ sơ" : Model.Section == "repairs" ? "Yêu cầu mới nhất" : Model.Section == "rooms" ? "Danh sách bảng chi tiết phòng" : "Bản ghi hiện có")</h2>
+        </div>
+        <div class="table-controls">
+            <label class="table-search">
+                <span>Tìm trong danh sách</span>
+                <input type="search" data-table-search placeholder="Mã, tên hoặc nội dung" autocomplete="off" />
+            </label>
+            <label class="table-filter">
+                <span>Trạng thái</span>
+                <select data-table-status>
+                    <option value="">Tất cả</option>
+                    @foreach (var state in Model.Rows.Select(x => x.State).Distinct().OrderBy(x => x))
+                    {
+                        <option value="@state">@DormitoryController.StatusText(state)</option>
+                    }
+                </select>
+            </label>
+            <span class="table-hint"><span data-visible-count>@Model.Rows.Count</span> / @Model.Rows.Count · SQL Server</span>
+        </div>
+    </div>
     @if (!Model.Rows.Any())
     {
         <div class="empty-state empty-table"><span class="empty-line"></span><strong>Chưa có dữ liệu trong mục này</strong><p>Khi phát sinh hồ sơ, bản ghi sẽ được hiển thị ở đây.</p></div>
@@ -26,19 +133,32 @@
         <p class="filter-empty" data-filter-empty hidden>Không có bản ghi nào khớp bộ lọc.</p>
     }
 </section>
+
 @if (Model.FormTitle is not null && Model.Fields.Count > 0)
 {
-    <section class="form-section" id="create-form"><div class="form-intro"><span class="form-mark">＋</span><div><h2>@Model.FormTitle</h2><p>@(Model.FormHelp ?? "Thông tin sẽ được lưu vào hồ sơ vận hành.")</p></div></div>
-        <form asp-controller="Dormitory" asp-action="Create" method="post" class="record-form"><input type="hidden" name="section" value="@Model.Section" />
+    <section class="form-section" id="create-form">
+        <div class="form-intro">
+            <span class="form-mark">＋</span>
+            <div>
+                <h2>@Model.FormTitle</h2>
+                <p>@(Model.FormHelp ?? "Thông tin sẽ được lưu vào hồ sơ vận hành.")</p>
+            </div>
+        </div>
+        <form asp-controller="Dormitory" asp-action="Create" method="post" class="record-form">
+            <input type="hidden" name="section" value="@Model.Section" />
             @foreach (var field in Model.Fields)
             {
-                <label class="field"><span>@field.Label@if (field.Required) { <i aria-hidden="true"> · bắt buộc</i> }</span>
-                @if (field.Type == "select") { <select name="@field.Name" required="@(field.Required ? "required" : null)"><option value="">Chọn @field.Label.ToLowerInvariant()</option>@foreach (var option in field.Options) { <option value="@option.Value">@option.Label</option> }</select> }
-                else if (field.Type == "textarea") { <textarea name="@field.Name" rows="4" required="@(field.Required ? "required" : null)"></textarea> }
-                else { <input name="@field.Name" type="@field.Type" required="@(field.Required ? "required" : null)" min="@(field.Type == "number" ? "0" : null)" step="@(field.Type == "number" ? "any" : null)" /> }
+                <label class="field">
+                    <span>@field.Label@if (field.Required) { <i aria-hidden="true"> · bắt buộc</i> }</span>
+                    @if (field.Type == "select") { <select name="@field.Name" required="@(field.Required ? "required" : null)"><option value="">Chọn @field.Label.ToLowerInvariant()</option>@foreach (var option in field.Options) { <option value="@option.Value">@option.Label</option> }</select> }
+                    else if (field.Type == "textarea") { <textarea name="@field.Name" rows="4" required="@(field.Required ? "required" : null)"></textarea> }
+                    else { <input name="@field.Name" type="@field.Type" required="@(field.Required ? "required" : null)" min="@(field.Type == "number" ? "0" : null)" step="@(field.Type == "number" ? "any" : null)" /> }
                 </label>
             }
-            <div class="form-actions"><button class="button button-primary" type="submit">Lưu thông tin <span aria-hidden="true">→</span></button><span class="form-footnote">Các trường bắt buộc được đánh dấu trên biểu mẫu.</span></div>
+            <div class="form-actions">
+                <button class="button button-primary" type="submit">Lưu thông tin <span aria-hidden="true">→</span></button>
+                <span class="form-footnote">Các trường bắt buộc được đánh dấu trên biểu mẫu.</span>
+            </div>
         </form>
     </section>
 }

@@ -39,6 +39,7 @@ public sealed class ModuleViewModel
     public List<FormFieldViewModel> Fields { get; init; } = [];
     public string? FormTitle { get; init; }
     public string? FormHelp { get; init; }
+    public List<RoomMatrixGroupViewModel> RoomGroups { get; set; } = [];
 }
 
 public sealed class ModuleRowViewModel
@@ -69,4 +70,36 @@ public sealed class SelectOptionViewModel(string value, string label)
 {
     public string Value { get; } = value;
     public string Label { get; } = label;
+}
+
+public sealed class RoomMatrixGroupViewModel
+{
+    public string BuildingName { get; init; } = "";
+    public string BuildingCode { get; init; } = "";
+    public List<FloorMatrixViewModel> Floors { get; init; } = [];
+}
+
+public sealed class FloorMatrixViewModel
+{
+    public int FloorNumber { get; init; }
+    public List<RoomCardViewModel> Rooms { get; init; } = [];
+}
+
+public sealed class RoomCardViewModel
+{
+    public long Id { get; init; }
+    public string RoomNumber { get; init; } = "";
+    public string RoomType { get; init; } = "";
+    public int Capacity { get; init; }
+    public int AvailableBeds { get; init; }
+    public decimal MonthlyPrice { get; init; }
+    public string Status { get; init; } = "";
+    public List<BedCardViewModel> Beds { get; init; } = [];
+}
+
+public sealed class BedCardViewModel
+{
+    public long Id { get; init; }
+    public string BedNumber { get; init; } = "";
+    public string Status { get; init; } = "";
 }

@@ -225,3 +225,236 @@
         margin-left: 0 !important;
     }
 }
+
+/* ==========================================================================
+   MATRIX FLOORPLAN STYLES (SPRINT 1 - TS1-08)
+   ========================================================================== */
+.matrix-section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+}
+.matrix-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 16px;
+    margin-bottom: 22px;
+    gap: 16px;
+}
+.matrix-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+.matrix-header p {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: #64748b;
+}
+.matrix-legend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #475569;
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.legend-item .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.dot-avail { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
+.dot-full { background: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); }
+.dot-maint { background: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2); }
+
+.building-matrix-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 20px;
+}
+.building-matrix-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.building-tag {
+    background: #0f172a;
+    color: #38bdf8;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+}
+.building-matrix-head h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.floor-matrix-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px dashed #cbd5e1;
+}
+.floor-matrix-row:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+.floor-badge {
+    min-width: 80px;
+    background: #e2e8f0;
+    color: #334155;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+.floor-rooms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    flex: 1;
+}
+
+.room-box {
+    background: #ffffff;
+    border: 2px solid;
+    border-radius: 8px;
+    padding: 12px;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+.room-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+.room-box.state-avail {
+    border-color: #10b981;
+}
+.room-box.state-full {
+    border-color: #ef4444;
+}
+.room-box.state-maint {
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+.room-box-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.room-id {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.room-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+.state-avail .room-dot { background: #10b981; }
+.state-full .room-dot { background: #ef4444; }
+.state-maint .room-dot { background: #f59e0b; }
+.room-id strong {
+    font-size: 15px;
+    color: #0f172a;
+}
+.room-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+}
+.state-avail .room-pill { background: #d1fae5; color: #065f46; }
+.state-full .room-pill { background: #fee2e2; color: #991b1b; }
+.state-maint .room-pill { background: #fef3c7; color: #92400e; }
+
+.room-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 10px;
+}
+.room-price {
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.beds-mini-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.bed-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 7px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+}
+.bed-avail {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+.bed-occ {
+    background: #f1f5f9;
+    color: #94a3b8;
+    border: 1px solid #e2e8f0;
+    text-decoration: line-through;
+}
+
+.room-box-actions {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid #f1f5f9;
+    display: flex;
+    justify-content: flex-end;
+}
+.btn-toggle-room {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    cursor: pointer;
+    color: #475569;
+}
+.btn-toggle-room:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}

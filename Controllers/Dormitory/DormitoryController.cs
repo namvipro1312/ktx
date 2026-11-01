@@ -121,17 +121,66 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
         switch (section)
         {
             case "rooms":
-                if (IsStudent && studentId is not null)
+                var allRooms = await db.rooms
+                    .Include(x => x.building)
+                    .Include(x => x.beds)
+                    .OrderBy(x => x.building.code)
+                    .ThenBy(x => x.floor_number)
+                    .ThenBy(x => x.room_number)
+                    .ToListAsync();
+
+                var matrixGroups = allRooms
+                    .GroupBy(x => x.building)
+                    .OrderBy(g => g.Key.code)
+                    .Select(bg => new RoomMatrixGroupViewModel
+                    {
+                        BuildingName = bg.Key.name,
+                        BuildingCode = bg.Key.code,
+                        Floors = bg
+                            .GroupBy(r => (int)(r.floor_number ?? 1))
+                            .OrderBy(fg => fg.Key)
+                            .Select(fg => new FloorMatrixViewModel
+                            {
+                                FloorNumber = fg.Key,
+                                Rooms = fg.Select(r => new RoomCardViewModel
+                                {
+                                    Id = r.id,
+                                    RoomNumber = r.room_number,
+                                    RoomType = r.room_type ?? "Tiêu chuẩn",
+                                    Capacity = r.capacity,
+                                    AvailableBeds = r.beds.Count(b => b.status == "available"),
+                                    MonthlyPrice = r.monthly_price,
+                                    Status = r.status,
+                                    Beds = r.beds.OrderBy(b => b.bed_number).Select(b => new BedCardViewModel
+                                    {
+                                        Id = b.id,
+                                        BedNumber = b.bed_number,
+                                        Status = b.status
+                                    }).ToList()
+                                }).ToList()
+                            }).ToList()
+                    }).ToList();
+
+                // If matrix data exists, use it and skip the flat‑table build.
+                if (matrixGroups.Any())
                 {
-                    var rooms = await db.rooms.Include(x => x.building).Include(x => x.beds).Where(x => x.status == "available").OrderBy(x => x.building.code).ThenBy(x => x.room_number).ToListAsync();
-                    model = Build("rooms", "Phòng và giường", "Chỗ ở đang mở đăng ký tại các tòa. Số giường trống được tính từ danh sách giường thực tế.", ["Tòa / phòng", "Loại phòng", "Còn trống", "Giá tháng", "Tình trạng"], rooms.Select(x => Row(x.id, [$"{x.building.name} · {x.room_number}", x.room_type ?? "—", x.beds.Count(b => b.status == "available").ToString(), $"{x.monthly_price:N0} ₫", StatusText(x.status)], x.status)).ToList());
+                    model.RoomGroups = matrixGroups;
+                    // No need to populate the traditional rows – the view will render the matrix.
                 }
                 else
                 {
-                    var rooms = await db.rooms.Include(x => x.building).Include(x => x.beds).OrderBy(x => x.building.code).ThenBy(x => x.room_number).ToListAsync();
-                    model = Build("rooms", "Tòa, phòng và giường", "Theo dõi năng lực, giá và tình trạng từng chỗ ở.", ["Tòa / phòng", "Tầng", "Loại phòng", "Danh sách giường", "Trống / Sức chứa", "Giá tháng", "Trạng thái"], rooms.Select(x => Row(x.id, [$"{x.building.name} · {x.room_number}", x.floor_number?.ToString() ?? "—", x.room_type ?? "—", string.Join(", ", x.beds.OrderBy(b => b.bed_number).Select(b => $"{b.bed_number} ({(b.status == "available" ? "Trống" : "Đã ở")})")), $"{x.beds.Count(b => b.status == "available")} / {x.capacity}", $"{x.monthly_price:N0} ₫", StatusText(x.status)], x.status, !IsAdmin || x.status == "maintenance" ? [] : [new RowActionViewModel("Bảo trì", "room-maintenance"), new RowActionViewModel("Mở phòng", "room-open")])).ToList(), "Thêm phòng", "Mã phòng, tòa, tầng, loại, sức chứa, giá tháng.", [
-                        new("buildingId", "Tòa", "select", true, await db.buildings.Where(x => x.is_active).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync()),
-                        new("roomNumber", "Mã phòng"), new("floor", "Tầng", "number"), new("roomType", "Loại phòng"), new("capacity", "Sức chứa", "number"), new("price", "Giá tháng (₫)", "number")]);
+                    // Fallback to the original flat‑table view when there are no rooms.
+                    if (IsStudent && studentId is not null)
+                    {
+                        var studentRooms = allRooms.Where(x => x.status == "available").ToList();
+                        model = Build("rooms", "Phòng và giường", "Chỗ ở đang mở đăng ký tại các tòa. Số giường trống được tính từ danh sách giường thực tế.", ["Tòa / phòng", "Loại phòng", "Còn trống", "Giá tháng", "Tình trạng"], studentRooms.Select(x => Row(x.id, [$"{x.building.name} · {x.room_number}", x.room_type ?? "—", x.beds.Count(b => b.status == "available").ToString(), $"{x.monthly_price:N0} ₫", StatusText(x.status)], x.status)).ToList());
+                    }
+                    else
+                    {
+                        model = Build("rooms", "Tòa, phòng và giường", "Theo dõi năng lực, giá và tình trạng từng chỗ ở.", ["Tòa / phòng", "Tầng", "Loại phòng", "Danh sách giường", "Trống / Sức chứa", "Giá tháng", "Trạng thái"], allRooms.Select(x => Row(x.id, [$"{x.building.name} · {x.room_number}", x.floor_number?.ToString() ?? "—", x.room_type ?? "—", string.Join(", ", x.beds.OrderBy(b => b.bed_number).Select(b => $"{b.bed_number} ({(b.status == "available" ? "Trống" : "Đã ở")})")), $"{x.beds.Count(b => b.status == "available")} / {x.capacity}", $"{x.monthly_price:N0} ₫", StatusText(x.status)], x.status, !IsAdmin || x.status == "maintenance" ? [] : [new RowActionViewModel("Bảo trì", "room-maintenance"), new RowActionViewModel("Mở phòng", "room-open")])).ToList(), "Thêm phòng", "Mã phòng, tòa, tầng, loại, sức chứa, giá tháng.", [
+                            new("buildingId", "Tòa", "select", true, await db.buildings.Where(x => x.is_active).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync()),
+                            new("roomNumber", "Mã phòng"), new("floor", "Tầng", "number"), new("roomType", "Loại phòng"), new("capacity", "Sức chứa", "number"), new("price", "Giá tháng (₫)", "number")]);
+                    }
                 }
                 break;
             case "buildings":
