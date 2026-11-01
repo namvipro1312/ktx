@@ -91,7 +91,8 @@
     </section>
 }
 
-@if (!Model.RoomGroups.Any()) {
+@if (!Model.RoomGroups.Any())
+{
     <section class="data-section">
     <div class="table-toolbar">
         <div class="table-title">
@@ -133,6 +134,7 @@
         <p class="filter-empty" data-filter-empty hidden>Không có bản ghi nào khớp bộ lọc.</p>
     }
 </section>
+}
 
 @if (Model.FormTitle is not null && Model.Fields.Count > 0)
 {
