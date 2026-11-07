@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using QLKTX.Data;
 using QLKTX.Data.Entities;
@@ -20,7 +20,11 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
         }
 
         var admin = await EnsureUser("admin", "admin@qlktx.local", "Quản trị viên Demo", "Demo@123", "system_admin");
+        await EnsureUser("qlktx01", "qlktx01@qlktx.local", "Nguyen Van Quan Ly", "Demo@123", "dorm_manager");
+        await EnsureUser("ketoan01", "ketoan01@qlktx.local", "Tran Thi Ke Toan", "Demo@123", "accountant");
+        await EnsureUser("ktv01", "ktv01@qlktx.local", "Le Van Ky Thuat", "Demo@123", "maintenance_staff");
         var studentUser = await EnsureUser("sv001", "sv001@qlktx.local", "Nguyễn Minh Anh", "Demo@123", "student");
+        await EnsureUser("sv002", "sv002@qlktx.local", "Tran Van Binh", "Demo@123", "student");
         if (!await db.asset_types.AnyAsync())
         {
             db.asset_types.AddRange(new asset_type { code = "BED", name = "Giường và nệm", description = "Tài sản phục vụ lưu trú" }, new asset_type { code = "FURN", name = "Nội thất", description = "Bàn ghế và tủ" }, new asset_type { code = "ELEC", name = "Thiết bị điện", description = "Thiết bị dùng chung" });
@@ -75,6 +79,24 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
         await db.SaveChangesAsync();
         var role = await db.roles.SingleAsync(x => x.code == roleCode);
         db.user_roles.Add(new user_role { user_id = item.id, role_id = role.id, assigned_at = DateTime.Now });
+        if (roleCode == "student")
+        {
+            var exists = await db.students.AnyAsync(s => s.user_id == item.id);
+            if (!exists)
+            {
+                db.students.Add(new student
+                {
+                    user_id = item.id,
+                    student_code = "SV" + item.id.ToString("D5"),
+                    gender = "male",
+                    faculty = "Công nghệ thông tin",
+                    course_year = 1,
+                    emergency_contact_name = "Phụ huynh " + item.full_name,
+                    emergency_contact_phone = "0912345678",
+                    created_at = DateTime.Now
+                });
+            }
+        }
         await db.SaveChangesAsync();
         return item;
     }

@@ -40,6 +40,9 @@ public sealed class ModuleViewModel
     public string? FormTitle { get; init; }
     public string? FormHelp { get; init; }
     public List<RoomMatrixGroupViewModel> RoomGroups { get; set; } = [];
+    public RegistrationStatsViewModel? RegistrationStats { get; set; }
+    public List<RegistrationItemViewModel> Registrations { get; set; } = [];
+    public List<RegistrationAvailableBedOption> AvailableBedsList { get; set; } = [];
 }
 
 public sealed class ModuleRowViewModel
@@ -103,3 +106,50 @@ public sealed class BedCardViewModel
     public string BedNumber { get; init; } = "";
     public string Status { get; init; } = "";
 }
+
+public sealed class RegistrationStatsViewModel
+{
+    public int TotalCount { get; init; }
+    public int PendingCount { get; init; }
+    public int ContractedCount { get; init; }
+    public int RejectedCount { get; init; }
+}
+
+public sealed class RegistrationItemViewModel
+{
+    public long Id { get; init; }
+    public string RegistrationCode { get; init; } = "";
+    public long StudentId { get; init; }
+    public string StudentName { get; init; } = "";
+    public string StudentCode { get; init; } = "";
+    public string Gender { get; init; } = "Nam";
+    public string Faculty { get; init; } = "";
+    public string Phone { get; init; } = "";
+    public string PreferredBuildingName { get; init; } = "Mọi tòa";
+    public string PreferredRoomType { get; init; } = "Mọi loại";
+    public DateOnly StartDate { get; init; }
+    public DateOnly EndDate { get; init; }
+    public DateTime SubmittedAt { get; init; }
+    public string Status { get; init; } = "pending";
+    public string? Note { get; init; }
+    public string? PriorityType { get; init; }
+    public string? AssignedBedInfo { get; init; }
+    public string? ReviewDecision { get; init; }
+    public string? ReviewComment { get; init; }
+    public DateTime? ReviewedAt { get; init; }
+    public string? ReviewerName { get; init; }
+    public long? ContractId { get; init; }
+    public string? ContractCode { get; init; }
+}
+
+public sealed class RegistrationAvailableBedOption
+{
+    public long BedId { get; init; }
+    public string DisplayLabel { get; init; } = "";
+    public string BuildingName { get; init; } = "";
+    public string RoomNumber { get; init; } = "";
+    public string BedNumber { get; init; } = "";
+    public string RoomType { get; init; } = "";
+    public decimal MonthlyPrice { get; init; }
+}
+
