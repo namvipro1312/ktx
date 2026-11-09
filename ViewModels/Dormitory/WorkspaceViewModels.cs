@@ -10,6 +10,33 @@ public sealed class DashboardViewModel
     public string DisplayName { get; init; } = "";
     public List<StationViewModel> Stations { get; init; } = [];
     public List<DashboardTaskViewModel> Tasks { get; init; } = [];
+    public StudentRoomInfoViewModel? StudentRoom { get; init; }
+}
+
+public sealed class StudentRoomInfoViewModel
+{
+    public string BuildingName { get; init; } = "";
+    public string RoomNumber { get; init; } = "";
+    public string BedNumber { get; init; } = "";
+    public string RoomType { get; init; } = "";
+    public decimal MonthlyPrice { get; init; }
+    public string ContractCode { get; init; } = "";
+    public DateOnly StartDate { get; init; }
+    public DateOnly EndDate { get; init; }
+    public string StudentName { get; init; } = "";
+    public string StudentCode { get; init; } = "";
+    public string Faculty { get; init; } = "";
+    public int? CourseYear { get; init; }
+    public string Gender { get; init; } = "";
+    public string PassCode { get; init; } = "";
+    public List<StudentRoommateViewModel> Roommates { get; init; } = [];
+}
+
+public sealed class StudentRoommateViewModel
+{
+    public string FullName { get; init; } = "";
+    public string StudentCode { get; init; } = "";
+    public string BedNumber { get; init; } = "";
 }
 
 public sealed class StationViewModel(string key, string label, int count, string color)
@@ -97,6 +124,8 @@ public sealed class RoomCardViewModel
     public int AvailableBeds { get; init; }
     public decimal MonthlyPrice { get; init; }
     public string Status { get; init; } = "";
+    public string GenderTarget { get; init; } = "Nam";
+    public List<string> Amenities { get; init; } = [];
     public List<BedCardViewModel> Beds { get; init; } = [];
 }
 
@@ -105,12 +134,17 @@ public sealed class BedCardViewModel
     public long Id { get; init; }
     public string BedNumber { get; init; } = "";
     public string Status { get; init; } = "";
+    public string Position { get; init; } = "Tầng 1 (Dưới)";
+    public string Proximity { get; init; } = "Gần cửa sổ";
+    public string? OccupantName { get; init; }
 }
 
 public sealed class RegistrationStatsViewModel
 {
     public int TotalCount { get; init; }
     public int PendingCount { get; init; }
+    public int NeedsInfoCount { get; init; }
+    public int WaitingListCount { get; init; }
     public int ContractedCount { get; init; }
     public int RejectedCount { get; init; }
 }
@@ -133,6 +167,15 @@ public sealed class RegistrationItemViewModel
     public string Status { get; init; } = "pending";
     public string? Note { get; init; }
     public string? PriorityType { get; init; }
+    public string PriorityTag { get; init; } = "Tiêu chuẩn";
+    public int Score { get; init; } = 50;
+    public string? ProofUrl { get; init; }
+    public int ViolationsCount { get; init; } = 0;
+    public decimal PastDebt { get; init; } = 0m;
+    public string? BedPositionPref { get; init; }
+    public string? FloorPref { get; init; }
+    public string? VehicleInfo { get; init; }
+    public string? EmergencyContact { get; init; }
     public string? AssignedBedInfo { get; init; }
     public string? ReviewDecision { get; init; }
     public string? ReviewComment { get; init; }

@@ -124,19 +124,6 @@
                         <input type="search" class="form-control form-control-sm" id="roomSearchInput" placeholder="Tìm số phòng (VD: 101, A-203, B-301)..." autocomplete="off" />
                     </div>
                 </div>
-
-                <!-- Legend Indicator -->
-                <div class="col-12 col-lg-auto text-lg-end d-none d-md-block">
-                    <span class="badge bg-success-lt text-success me-1" title="Phòng còn giường trống sẽ tự động mở để sinh viên đăng ký">
-                        <i class="ti ti-point-filled"></i> Còn chỗ (Tự động mở)
-                    </span>
-                    <span class="badge bg-secondary-lt text-secondary me-1" title="Phòng đã đủ số người sẽ tự động đóng cửa">
-                        <i class="ti ti-lock me-1"></i> Đã đầy (Tự động đóng)
-                    </span>
-                    <span class="badge bg-warning-lt text-warning" title="Phòng cần bảo dưỡng do Ban quản lý ấn nút thủ công">
-                        <i class="ti ti-tool me-1"></i> Bảo trì (Ấn thủ công)
-                    </span>
-                </div>
             </div>
         </div>
     </div>
@@ -251,6 +238,12 @@
                                                         </span>
                                                     }
                                                 </div>
+
+                                                <!-- Sơ đồ 2D nút bấm -->
+                                                <button type="button" class="btn btn-outline-primary btn-sm w-100 py-1 fs-6 mb-2 text-truncate" 
+                                                        onclick='showRoom2DBlueprint("@room.RoomNumber", "@room.RoomType", "@room.MonthlyPrice.ToString("N0")", "@room.GenderTarget", "@string.Join(",", room.Amenities)", @Html.Raw(System.Text.Json.JsonSerializer.Serialize(room.Beds)))'>
+                                                    <i class="ti ti-layout-grid me-1"></i> Sơ đồ 2D phòng
+                                                </button>
 
                                                 <!-- Role-Specific Action -->
                                                 <div class="mt-auto pt-1 border-top border-secondary-subtle">
@@ -425,65 +418,53 @@
 {
     @if (Model.RegistrationStats is not null)
     {
-        <!-- Stats Row -->
-        <div class="row row-cards g-3 mb-4">
-            <div class="col-sm-6 col-lg-3">
-                <div class="card card-sm shadow-sm border-0 border-start border-3 border-primary">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <span class="avatar avatar-md bg-primary-lt text-primary rounded me-3">
-                                <i class="ti ti-folders fs-1"></i>
-                            </span>
-                            <div>
-                                <div class="text-muted fs-6">Tổng số hồ sơ</div>
-                                <div class="h2 mb-0 fw-bold">@Model.RegistrationStats.TotalCount</div>
-                            </div>
-                        </div>
+        <!-- Stats Row (6 chỉ số phân loại hồ sơ) -->
+        <div class="row row-cards g-2 mb-4">
+            <div class="col-6 col-sm-4 col-lg-2">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-secondary h-100">
+                    <div class="card-body p-2 px-3">
+                        <div class="text-muted fs-6">Tổng hồ sơ</div>
+                        <div class="h2 mb-0 fw-bold text-dark">@Model.RegistrationStats.TotalCount</div>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-6 col-lg-3">
-                <div class="card card-sm shadow-sm border-0 border-start border-3 border-warning">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <span class="avatar avatar-md bg-warning-lt text-warning rounded me-3">
-                                <i class="ti ti-clock-hour-4 fs-1"></i>
-                            </span>
-                            <div>
-                                <div class="text-muted fs-6">Chờ xét duyệt</div>
-                                <div class="h2 mb-0 fw-bold text-warning">@Model.RegistrationStats.PendingCount</div>
-                            </div>
-                        </div>
+            <div class="col-6 col-sm-4 col-lg-2">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-warning h-100">
+                    <div class="card-body p-2 px-3">
+                        <div class="text-muted fs-6">Chờ xét duyệt</div>
+                        <div class="h2 mb-0 fw-bold text-warning">@Model.RegistrationStats.PendingCount</div>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-6 col-lg-3">
-                <div class="card card-sm shadow-sm border-0 border-start border-3 border-success">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <span class="avatar avatar-md bg-success-lt text-success rounded me-3">
-                                <i class="ti ti-circle-check fs-1"></i>
-                            </span>
-                            <div>
-                                <div class="text-muted fs-6">Đã duyệt & Xếp phòng</div>
-                                <div class="h2 mb-0 fw-bold text-success">@Model.RegistrationStats.ContractedCount</div>
-                            </div>
-                        </div>
+            <div class="col-6 col-sm-4 col-lg-2">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-info h-100">
+                    <div class="card-body p-2 px-3">
+                        <div class="text-muted fs-6">Cần bổ sung</div>
+                        <div class="h2 mb-0 fw-bold text-info">@Model.RegistrationStats.NeedsInfoCount</div>
                     </div>
                 </div>
             </div>
-            <div class="col-sm-6 col-lg-3">
-                <div class="card card-sm shadow-sm border-0 border-start border-3 border-danger">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <span class="avatar avatar-md bg-danger-lt text-danger rounded me-3">
-                                <i class="ti ti-circle-x fs-1"></i>
-                            </span>
-                            <div>
-                                <div class="text-muted fs-6">Từ chối / Hủy</div>
-                                <div class="h2 mb-0 fw-bold text-danger">@Model.RegistrationStats.RejectedCount</div>
-                            </div>
-                        </div>
+            <div class="col-6 col-sm-4 col-lg-2">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-purple h-100">
+                    <div class="card-body p-2 px-3">
+                        <div class="text-muted fs-6">Danh sách chờ</div>
+                        <div class="h2 mb-0 fw-bold text-purple">@Model.RegistrationStats.WaitingListCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-lg-2">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-success h-100">
+                    <div class="card-body p-2 px-3">
+                        <div class="text-muted fs-6">Đã duyệt (48h/HĐ)</div>
+                        <div class="h2 mb-0 fw-bold text-success">@Model.RegistrationStats.ContractedCount</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-sm-4 col-lg-2">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-danger h-100">
+                    <div class="card-body p-2 px-3">
+                        <div class="text-muted fs-6">Từ chối / Hủy</div>
+                        <div class="h2 mb-0 fw-bold text-danger">@Model.RegistrationStats.RejectedCount</div>
                     </div>
                 </div>
             </div>
@@ -618,37 +599,75 @@
     }
     else
     {
-        <!-- ADMIN / MANAGER VIEW: APPROVAL TABLE -->
+        <!-- ADMIN / MANAGER VIEW: QUY TRÌNH 5 GIAI ĐOẠN XÉT DUYỆT & PHÂN BỔ GIƯỜNG -->
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-header bg-white py-3">
-                <div class="row align-items-center g-2">
-                    <div class="col-md-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                    <div>
                         <h3 class="card-title fw-bold mb-0">
-                            <i class="ti ti-clipboard-check text-primary me-2"></i> Danh sách hồ sơ đăng ký phòng cần xét duyệt
+                            <i class="ti ti-clipboard-check text-primary me-2"></i> Hội đồng xét duyệt hồ sơ & Phân bổ giường KTX
                         </h3>
+                        <small class="text-muted">Thẩm định minh chứng ưu tiên, đối soát kỷ luật/nợ, xếp phòng tự động theo điểm và kiểm soát hạn chót 48h</small>
                     </div>
-                    <div class="col-md-8 text-md-end">
-                        <div class="d-flex flex-wrap justify-content-md-end align-items-center gap-2">
-                            @if (Model.RegistrationStats?.PendingCount > 0)
-                            {
-                                <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0" onsubmit="return confirm('Hệ thống sẽ tự động duyệt và xếp giường cho tất cả hồ sơ đang chờ có phòng phù hợp. Tiếp tục?');">
-                                    <input type="hidden" name="section" value="registrations" />
-                                    <input type="hidden" name="id" value="0" />
-                                    <input type="hidden" name="operation" value="auto-allocate-all" />
-                                    <button class="btn btn-warning btn-sm" type="submit">
-                                        <i class="ti ti-bolt me-1"></i> Tự động duyệt tất cả (@Model.RegistrationStats.PendingCount đơn)
-                                    </button>
-                                </form>
-                            }
-                            <input type="search" class="form-control form-control-sm w-auto" data-table-search placeholder="Tìm sinh viên, mã hồ sơ..." autocomplete="off" />
-                            <select class="form-select form-select-sm w-auto" data-table-status>
-                                <option value="">Tất cả trạng thái</option>
-                                <option value="pending">Chờ xử lý</option>
-                                <option value="contracted">Đã phân giường</option>
-                                <option value="rejected">Từ chối</option>
-                                <option value="cancelled">Đã hủy</option>
-                            </select>
+                    <div class="d-flex flex-wrap align-items-center gap-2">
+                        @if (Model.RegistrationStats?.PendingCount > 0)
+                        {
+                            <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0"
+                                  onsubmit="return confirm('Hệ thống sẽ quét danh sách theo THỨ HẠNG ĐIỂM ƯU TIÊN (từ cao xuống thấp) để tự động phân vào các giường trống phù hợp và khởi tạo hóa đơn 48h. Các hồ sơ vượt chỉ tiêu sẽ chuyển vào Danh sách chờ. Tiếp tục?');">
+                                <input type="hidden" name="section" value="registrations" />
+                                <input type="hidden" name="id" value="0" />
+                                <input type="hidden" name="operation" value="auto-allocate-all" />
+                                <button class="btn btn-warning btn-sm shadow-sm" type="submit" title="Chạy xét duyệt tự động theo điểm">
+                                    <i class="ti ti-bolt me-1"></i> Chạy xét duyệt tự động (@Model.RegistrationStats.PendingCount hồ sơ)
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bộ lọc đa chiều (Giai đoạn 1: Filtering & Ingestion) -->
+            <div class="card-body bg-light-subtle border-bottom py-2 px-3">
+                <div class="row g-2 align-items-center">
+                    <div class="col-12 col-md-3">
+                        <div class="input-icon">
+                            <span class="input-icon-addon"><i class="ti ti-search fs-3"></i></span>
+                            <input type="search" class="form-control form-control-sm" id="regFilterSearch" placeholder="Tìm MSSV, họ tên, SĐT, mã ĐK..." autocomplete="off" />
                         </div>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select class="form-select form-select-sm" id="regFilterStatus">
+                            <option value="all">-- Tất cả trạng thái --</option>
+                            <option value="pending">⏳ Chờ duyệt (Pending)</option>
+                            <option value="needs_info">⚠️ Cần bổ sung minh chứng</option>
+                            <option value="waiting_list">📋 Danh sách chờ (Waitlist)</option>
+                            <option value="contracted">✅ Đã duyệt (Giữ chỗ 48h/HĐ)</option>
+                            <option value="rejected">❌ Đã từ chối</option>
+                            <option value="cancelled">🚫 Đã hủy / Thu hồi</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select class="form-select form-select-sm" id="regFilterPriority">
+                            <option value="all">-- Mọi diện ưu tiên --</option>
+                            <option value="100">⭐ TB-LS / Chính sách (100đ)</option>
+                            <option value="95">♿ Khuyết tật (95đ)</option>
+                            <option value="90">🏷️ Hộ nghèo/cận nghèo (90đ)</option>
+                            <option value="80">🌊 Vùng sâu/hải đảo (80đ)</option>
+                            <option value="75">🚗 Ngoại tỉnh xa (75đ)</option>
+                            <option value="70">🎓 Tân sinh viên (70đ)</option>
+                            <option value="50">🏠 Tiêu chuẩn (50đ)</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-2">
+                        <select class="form-select form-select-sm" id="regFilterRoomType">
+                            <option value="all">-- Mọi loại phòng --</option>
+                            <option value="4 người">Phòng 4 người</option>
+                            <option value="6 người">Phòng 6 người</option>
+                            <option value="8 người">Phòng 8 người</option>
+                        </select>
+                    </div>
+                    <div class="col-6 col-md-3 text-end">
+                        <span class="text-muted fs-6" id="regFilterCount">Hiển thị @Model.Registrations.Count hồ sơ</span>
                     </div>
                 </div>
             </div>
@@ -664,60 +683,134 @@
             else
             {
                 <div class="table-responsive">
-                    <table class="table table-vcenter card-table table-hover table-striped">
+                    <table class="table table-vcenter card-table table-hover table-striped align-middle" id="regTable">
                         <thead>
-                            <tr>
-                                <th>Mã hồ sơ</th>
-                                <th>Sinh viên</th>
-                                <th>Nguyện vọng</th>
-                                <th>Thời hạn</th>
-                                <th>Ưu tiên / Ghi chú</th>
+                            <tr class="text-muted fs-6">
+                                <th>Mã hồ sơ & Nộp</th>
+                                <th>Thông tin sinh viên</th>
+                                <th>Điểm & Minh chứng</th>
+                                <th>Đối soát lịch sử</th>
+                                <th>Nguyện vọng & Hậu cần</th>
                                 <th>Trạng thái</th>
-                                <th>Giường phân bổ</th>
-                                <th class="text-center">Thao tác xét duyệt</th>
+                                <th>Phân bổ / Hạn chót</th>
+                                <th class="text-center" style="min-width: 170px;">Thao tác xét duyệt</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var reg in Model.Registrations)
                             {
                                 var isPending = reg.Status == "pending";
-                                var statusBadge = reg.Status == "contracted" ? "bg-success-lt text-success"
-                                                : reg.Status == "pending" ? "bg-warning-lt text-warning"
+                                var isNeedsInfo = reg.Status == "needs_info";
+                                var isWaiting = reg.Status == "waiting_list";
+                                var isContracted = reg.Status == "contracted";
+                                var isCanAct = isPending || isNeedsInfo || isWaiting;
+
+                                var statusBadge = isContracted ? "bg-success-lt text-success"
+                                                : isPending ? "bg-warning-lt text-warning"
+                                                : isNeedsInfo ? "bg-info-lt text-info"
+                                                : isWaiting ? "bg-purple-lt text-purple"
                                                 : reg.Status == "rejected" ? "bg-danger-lt text-danger"
                                                 : "bg-secondary-lt text-secondary";
 
-                                <tr class="row-state-@reg.Status" data-filter-row data-row-state="@reg.Status">
+                                var scoreColor = reg.Score >= 90 ? "bg-danger text-white"
+                                               : reg.Score >= 75 ? "bg-warning text-dark"
+                                               : reg.Score >= 65 ? "bg-info text-white"
+                                               : "bg-secondary text-white";
+
+                                <tr class="reg-row"
+                                    data-status="@reg.Status"
+                                    data-score="@reg.Score"
+                                    data-roomtype="@reg.PreferredRoomType"
+                                    data-search="@($"{reg.RegistrationCode} {reg.StudentCode} {reg.StudentName} {reg.Phone} {reg.Faculty}".ToLowerInvariant())">
                                     <td>
                                         <strong class="text-dark">@reg.RegistrationCode</strong>
                                         <div class="text-muted fs-6">@reg.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</div>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold text-dark">@reg.StudentName</div>
-                                        <div class="text-muted fs-6">MSV: @reg.StudentCode · @reg.Gender · @reg.Faculty</div>
-                                        <div class="text-muted fs-6">SĐT: @reg.Phone</div>
+                                        <div class="fw-bold text-dark">@reg.StudentName</div>
+                                        <div class="text-muted fs-6">MSV: <strong>@reg.StudentCode</strong> · @reg.Gender</div>
+                                        <div class="text-muted fs-6">Khoa: @reg.Faculty</div>
+                                        <div class="text-muted fs-6"><i class="ti ti-phone fs-6"></i> @reg.Phone</div>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold text-primary">@reg.PreferredBuildingName</div>
-                                        <div class="text-muted fs-6">Loại: @reg.PreferredRoomType</div>
+                                        <div class="d-flex align-items-center gap-1 mb-1">
+                                            <span class="badge @scoreColor px-2 py-1 fs-6 fw-bold">@reg.Score điểm</span>
+                                            <span class="badge bg-light text-dark border fs-6">@reg.PriorityTag</span>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(reg.ProofUrl))
+                                        {
+                                            <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2 fs-6 mt-1"
+                                                    onclick="openProofPreviewModal('@reg.RegistrationCode', '@reg.StudentName', '@reg.PriorityTag', '@reg.Score', '@reg.ProofUrl')">
+                                                <i class="ti ti-file-certificate me-1"></i> Xem minh chứng
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted fs-6 fst-italic">Không có file</span>
+                                        }
                                     </td>
                                     <td>
-                                        <div class="text-dark">@reg.StartDate.ToString("dd/MM/yyyy")</div>
-                                        <div class="text-muted fs-6">đến @reg.EndDate.ToString("dd/MM/yyyy")</div>
-                                    </td>
-                                    <td>
-                                        <div class="text-truncate" style="max-width:160px;" title="@reg.Note">
-                                            @(string.IsNullOrWhiteSpace(reg.Note) ? "—" : reg.Note)
+                                        <!-- Đối soát lịch sử kỷ luật & công nợ -->
+                                        <div class="mb-1">
+                                            @if (reg.ViolationsCount > 0)
+                                            {
+                                                <span class="badge bg-danger-lt text-danger" title="Sinh viên có tiền sử vi phạm kỷ luật nội trú">
+                                                    <i class="ti ti-alert-triangle me-1"></i> @reg.ViolationsCount vi phạm
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-success-lt text-success" title="Hồ sơ trong sạch, không vi phạm">
+                                                    <i class="ti ti-shield-check me-1"></i> 0 vi phạm
+                                                </span>
+                                            }
+                                        </div>
+                                        <div>
+                                            @if (reg.PastDebt > 0)
+                                            {
+                                                <span class="badge bg-danger-lt text-danger" title="Còn nợ tiền điện nước/phòng cũ">
+                                                    <i class="ti ti-coin me-1"></i> Nợ: @reg.PastDebt.ToString("N0") ₫
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-light text-muted border" title="Không có công nợ cũ">
+                                                    <i class="ti ti-check fs-6"></i> Hết nợ
+                                                </span>
+                                            }
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="badge @statusBadge">@DormitoryController.StatusText(reg.Status)</span>
+                                        <div class="fw-semibold text-primary">@reg.PreferredBuildingName · @reg.PreferredRoomType</div>
+                                        @if (!string.IsNullOrWhiteSpace(reg.BedPositionPref))
+                                        {
+                                            <div class="text-muted fs-6">Vị trí: <strong>@reg.BedPositionPref</strong></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(reg.FloorPref))
+                                        {
+                                            <div class="text-muted fs-6">Tầng: @reg.FloorPref</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(reg.VehicleInfo))
+                                        {
+                                            <div class="text-muted fs-6"><i class="ti ti-motorbike fs-6"></i> @reg.VehicleInfo</div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(reg.EmergencyContact))
+                                        {
+                                            <div class="text-muted fs-6" title="Người liên hệ khẩn cấp"><i class="ti ti-urgent fs-6 text-danger"></i> @reg.EmergencyContact</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge @statusBadge px-2 py-1">@DormitoryController.StatusText(reg.Status)</span>
                                     </td>
                                     <td>
                                         @if (!string.IsNullOrWhiteSpace(reg.AssignedBedInfo))
                                         {
-                                            <span class="badge bg-teal-lt text-teal">
+                                            <span class="badge bg-teal-lt text-teal d-block mb-1">
                                                 <i class="ti ti-bed me-1"></i> @reg.AssignedBedInfo
                                             </span>
+                                            <small class="text-warning fw-medium d-block">
+                                                <i class="ti ti-clock-hour-4 me-1"></i> Hạn nộp cọc 48h
+                                            </small>
                                         }
                                         else if (reg.Status == "rejected")
                                         {
@@ -725,32 +818,72 @@
                                                 ✕ @(string.IsNullOrWhiteSpace(reg.ReviewComment) ? "Từ chối" : reg.ReviewComment)
                                             </span>
                                         }
+                                        else if (isWaiting)
+                                        {
+                                            <span class="text-purple fs-6 fw-medium"><i class="ti ti-hourglass me-1"></i> Hàng chờ ưu tiên</span>
+                                        }
                                         else
                                         {
-                                            <span class="text-muted fs-6">Chưa phân</span>
+                                            <span class="text-muted fs-6">Chưa xếp phòng</span>
                                         }
                                     </td>
                                     <td class="text-center">
-                                        @if (isPending)
+                                        @if (isCanAct)
                                         {
-                                            <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-success" onclick="openApproveModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName', '@reg.PreferredBuildingName', '@reg.PreferredRoomType')">
+                                            <div class="d-flex flex-wrap justify-content-center gap-1">
+                                                <!-- 1. DUYỆT & XẾP PHÒNG -->
+                                                <button type="button" class="btn btn-success btn-sm px-2"
+                                                        onclick="openApproveModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName', '@reg.PreferredBuildingName', '@reg.PreferredRoomType', @reg.Score, '@reg.PriorityTag')"
+                                                        title="Phê duyệt & phân giường (Tự động hoặc chỉ định thủ công)">
                                                     <i class="ti ti-check me-1"></i> Duyệt
                                                 </button>
-                                                <button type="button" class="btn btn-outline-danger" onclick="openRejectModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName')">
-                                                    <i class="ti ti-x me-1"></i> Từ chối
+
+                                                <!-- 2. YÊU CẦU BỔ SUNG MINH CHỨNG -->
+                                                <button type="button" class="btn btn-outline-info btn-sm px-1"
+                                                        onclick="openRequestChangesModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName')"
+                                                        title="Yêu cầu sinh viên chụp lại minh chứng hoặc sửa thông tin">
+                                                    <i class="ti ti-edit-circle"></i>
+                                                </button>
+
+                                                <!-- 3. CHUYỂN VÀO DANH SÁCH CHỜ -->
+                                                <button type="button" class="btn btn-outline-purple btn-sm px-1"
+                                                        onclick="openWaitlistModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName')"
+                                                        title="Đưa vào danh sách chờ">
+                                                    <i class="ti ti-clock"></i>
+                                                </button>
+
+                                                <!-- 4. TỪ CHỐI -->
+                                                <button type="button" class="btn btn-outline-danger btn-sm px-1"
+                                                        onclick="openRejectModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName')"
+                                                        title="Từ chối hồ sơ kèm lý do">
+                                                    <i class="ti ti-x"></i>
                                                 </button>
                                             </div>
                                         }
-                                        else if (reg.ContractId.HasValue)
+                                        else if (isContracted)
                                         {
-                                            <a class="btn btn-outline-primary btn-sm" href="/Dormitory/ContractView/@reg.ContractId.Value">
-                                                Xem HĐ <i class="ti ti-arrow-right ms-1"></i>
-                                            </a>
+                                            <div class="d-flex flex-wrap justify-content-center gap-1">
+                                                @if (reg.ContractId.HasValue)
+                                                {
+                                                    <a class="btn btn-outline-primary btn-sm px-2" href="/Dormitory/ContractView/@reg.ContractId.Value" title="Xem hợp đồng nội trú">
+                                                        <i class="ti ti-file-text me-1"></i> Xem HĐ
+                                                    </a>
+                                                }
+                                                <!-- THU HỒI NẾU QUÁ HẠN 48H -->
+                                                <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0"
+                                                      onsubmit="return confirm('Xác nhận thu hồi chỗ ở của sinh viên @reg.StudentName do quá hạn 48h chưa thanh toán tiền cọc? Giường sẽ được giải phóng.');">
+                                                    <input type="hidden" name="section" value="registrations" />
+                                                    <input type="hidden" name="id" value="@reg.Id" />
+                                                    <input type="hidden" name="operation" value="revoke-expired" />
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm px-1" title="Thu hồi chỗ ở nếu quá hạn 48h">
+                                                        <i class="ti ti-trash"></i> Thu hồi
+                                                    </button>
+                                                </form>
+                                            </div>
                                         }
                                         else
                                         {
-                                            <span class="text-muted fs-6">Đã xử lý</span>
+                                            <span class="text-muted fs-6">Đã đóng hồ sơ</span>
                                         }
                                     </td>
                                 </tr>
@@ -761,46 +894,71 @@
             }
         </div>
 
-        <!-- MODAL APPROVE -->
+        <!-- MODAL 1: DUYỆT & XẾP PHÒNG (APPROVE & ALLOCATE) -->
         <div id="modalApprove" class="modal modal-blur fade show" style="display:none; background:rgba(15,23,42,0.6);" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                     <form asp-controller="Dormitory" asp-action="Process" method="post">
                         <input type="hidden" name="section" value="registrations" />
                         <input type="hidden" name="id" id="approveRegId" value="" />
                         <input type="hidden" name="operation" value="approve" />
-                        <div class="modal-header">
-                            <h5 class="modal-title fw-bold"><i class="ti ti-check text-success me-2"></i>Duyệt hồ sơ & Phân bổ giường KTX</h5>
-                            <button type="button" class="btn-close" onclick="closeApproveModal()" aria-label="Close"></button>
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title fw-bold"><i class="ti ti-check me-2"></i>Phê duyệt hồ sơ & Phân bổ giường KTX</h5>
+                            <button type="button" class="btn-close btn-close-white" onclick="closeApproveModal()" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <div class="p-3 bg-light rounded mb-3">
-                                <div>Mã hồ sơ: <strong id="approveModalCode" class="text-dark"></strong></div>
-                                <div>Sinh viên: <strong id="approveModalStudent" class="text-primary"></strong></div>
-                                <div>Nguyện vọng: <span id="approveModalPref" class="text-muted"></span></div>
+                            <div class="row g-2 p-3 bg-light rounded mb-3">
+                                <div class="col-sm-6">
+                                    <div class="text-muted fs-6">Mã hồ sơ:</div>
+                                    <strong id="approveModalCode" class="text-dark fs-5"></strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="text-muted fs-6">Sinh viên:</div>
+                                    <strong id="approveModalStudent" class="text-primary fs-5"></strong>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="text-muted fs-6">Nguyện vọng phòng:</div>
+                                    <span id="approveModalPref" class="text-dark fw-medium"></span>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="text-muted fs-6">Điểm ưu tiên:</div>
+                                    <span id="approveModalScore" class="badge bg-primary text-white"></span>
+                                </div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Chọn giường phân bổ</label>
-                                <select name="bedId" id="approveBedSelect" class="form-select">
-                                    <option value="0">⚡ Tự động tìm giường phù hợp nhất</option>
+                                <label class="form-label fw-bold">Chỉ định giường phân bổ</label>
+                                <select name="bedId" id="approveBedSelect" class="form-select form-select-lg">
+                                    <option value="0">⚡ Tự động gán giường trống phù hợp nhất theo nguyện vọng</option>
                                     @foreach (var bed in Model.AvailableBedsList)
                                     {
                                         <option value="@bed.BedId">@bed.DisplayLabel</option>
                                     }
                                 </select>
-                                <small class="form-hint">Nếu để mặc định, hệ thống tự động tìm giường theo đúng tòa và loại phòng nguyện vọng.</small>
+                                <small class="form-hint text-primary">
+                                    <i class="ti ti-info-circle me-1"></i> Hệ thống hỗ trợ cả chế độ Xếp tự động và Chỉ định phòng/giường cụ thể cho sinh viên có nhu cầu đặc biệt (tầng thấp, khuyết tật...).
+                                </small>
+                            </div>
+
+                            <div class="alert alert-warning mb-3">
+                                <div class="d-flex align-items-center">
+                                    <i class="ti ti-clock-hour-4 fs-2 me-2 text-warning"></i>
+                                    <div>
+                                        <strong>Cơ chế Khóa giữ chỗ 48 giờ:</strong>
+                                        Hệ thống sẽ tạm khóa giường này và phát hành hóa đơn nộp phí cọc kèm mã VietQR tự động. Nếu sau 48h sinh viên không nộp tiền, giường sẽ tự động được thu hồi.
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Lời dặn / Ghi chú gửi sinh viên</label>
-                                <textarea name="comment" rows="3" class="form-control" placeholder="Ví dụ: Đã duyệt phân phòng theo nguyện vọng. Vui lòng hoàn tất nộp cọc..."></textarea>
+                                <label class="form-label fw-semibold">Lời dặn / Ghi chú gửi sinh viên (sẽ gửi qua thông báo):</label>
+                                <textarea name="comment" rows="2" class="form-control" placeholder="Ví dụ: Đã duyệt phân phòng theo nguyện vọng. Em vui lòng kiểm tra mục Hóa đơn để thanh toán cọc giữ chỗ trong 48h."></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-link link-secondary" onclick="closeApproveModal()">Đóng</button>
-                            <button type="submit" class="btn btn-success">
-                                <i class="ti ti-check me-1"></i> Xác nhận duyệt & Tạo hợp đồng
+                            <button type="submit" class="btn btn-success px-4">
+                                <i class="ti ti-check me-1"></i> Xác nhận duyệt & Khóa giữ chỗ 48h
                             </button>
                         </div>
                     </form>
@@ -808,7 +966,70 @@
             </div>
         </div>
 
-        <!-- MODAL REJECT -->
+        <!-- MODAL 2: YÊU CẦU BỔ SUNG MINH CHỨNG (REQUEST CHANGES) -->
+        <div id="modalRequestChanges" class="modal modal-blur fade show" style="display:none; background:rgba(15,23,42,0.6);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form asp-controller="Dormitory" asp-action="Process" method="post">
+                        <input type="hidden" name="section" value="registrations" />
+                        <input type="hidden" name="id" id="reqChangesId" value="" />
+                        <input type="hidden" name="operation" value="request-changes" />
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title fw-bold"><i class="ti ti-edit-circle me-2"></i>Yêu cầu bổ sung hồ sơ / Minh chứng</h5>
+                            <button type="button" class="btn-close btn-close-white" onclick="closeRequestChangesModal()" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="p-3 bg-light rounded mb-3">
+                                <div>Mã hồ sơ: <strong id="reqChangesModalCode" class="text-dark"></strong></div>
+                                <div>Sinh viên: <strong id="reqChangesModalStudent" class="text-info"></strong></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Lý do yêu cầu bổ sung (Sinh viên sẽ nhận được thông báo):</label>
+                                <textarea name="comment" rows="3" class="form-control" required
+                                          placeholder="Ví dụ: Ảnh chụp sổ hộ nghèo bị mờ, không thấy dấu đỏ; hoặc thiếu thông tin người liên hệ khẩn cấp..."></textarea>
+                            </div>
+                            <div class="form-hint text-muted">Hồ sơ sẽ chuyển về trạng thái <strong>Cần bổ sung</strong> để sinh viên sửa lại và nộp tiếp.</div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-link link-secondary" onclick="closeRequestChangesModal()">Đóng</button>
+                            <button type="submit" class="btn btn-info text-white">Gửi yêu cầu bổ sung</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 3: CHUYỂN VÀO DANH SÁCH CHỜ (WAITLIST) -->
+        <div id="modalWaitlist" class="modal modal-blur fade show" style="display:none; background:rgba(15,23,42,0.6);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form asp-controller="Dormitory" asp-action="Process" method="post">
+                        <input type="hidden" name="section" value="registrations" />
+                        <input type="hidden" name="id" id="waitlistId" value="" />
+                        <input type="hidden" name="operation" value="waitlist" />
+                        <div class="modal-header bg-purple text-white">
+                            <h5 class="modal-title fw-bold"><i class="ti ti-clock me-2"></i>Chuyển vào Danh sách chờ (Waitlist)</h5>
+                            <button type="button" class="btn-close btn-close-white" onclick="closeWaitlistModal()" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="p-3 bg-light rounded mb-3">
+                                <div>Mã hồ sơ: <strong id="waitlistModalCode" class="text-dark"></strong></div>
+                                <div>Sinh viên: <strong id="waitlistModalStudent" class="text-purple"></strong></div>
+                            </div>
+                            <p class="text-muted">
+                                Hồ sơ này đủ điều kiện nhưng hiện đã hết chỉ tiêu loại phòng yêu cầu. Hồ sơ sẽ được giữ thứ tự ưu tiên trong Danh sách chờ và sẽ được đôn lên ngay khi có sinh viên khác bị hủy hoặc nhả phòng.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-link link-secondary" onclick="closeWaitlistModal()">Đóng</button>
+                            <button type="submit" class="btn btn-purple text-white">Xác nhận đưa vào Danh sách chờ</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL 4: TỪ CHỐI HỒ SƠ (REJECT) -->
         <div id="modalReject" class="modal modal-blur fade show" style="display:none; background:rgba(15,23,42,0.6);" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -816,9 +1037,9 @@
                         <input type="hidden" name="section" value="registrations" />
                         <input type="hidden" name="id" id="rejectRegId" value="" />
                         <input type="hidden" name="operation" value="reject" />
-                        <div class="modal-header">
-                            <h5 class="modal-title fw-bold text-danger"><i class="ti ti-alert-triangle text-danger me-2"></i>Từ chối hồ sơ đăng ký</h5>
-                            <button type="button" class="btn-close" onclick="closeRejectModal()" aria-label="Close"></button>
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title fw-bold"><i class="ti ti-alert-triangle me-2"></i>Từ chối hồ sơ đăng ký phòng</h5>
+                            <button type="button" class="btn-close btn-close-white" onclick="closeRejectModal()" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                             <div class="p-3 bg-light rounded mb-3">
@@ -827,7 +1048,7 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Lý do từ chối hồ sơ</label>
-                                <textarea name="comment" rows="3" class="form-control" required placeholder="Nêu rõ lý do: Hết chỉ tiêu phòng, không thuộc diện ưu tiên..."></textarea>
+                                <textarea name="comment" rows="3" class="form-control" required placeholder="Nêu rõ lý do: Hồ sơ không hợp lệ, vi phạm kỷ luật nghiêm trọng các kỳ trước, không thuộc diện tiếp nhận..."></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -839,17 +1060,114 @@
             </div>
         </div>
 
+        <!-- MODAL 5: XEM MINH CHỨNG TRỰC TIẾP (IN-APP PROOF PREVIEW) -->
+        <div id="modalProofPreview" class="modal modal-blur fade show" style="display:none; background:rgba(15,23,42,0.7);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title fw-bold"><i class="ti ti-file-certificate text-primary me-2"></i>Thẩm định file minh chứng ưu tiên</h5>
+                            <div class="text-muted fs-6" id="proofModalInfo"></div>
+                        </div>
+                        <button type="button" class="btn-close" onclick="closeProofPreviewModal()" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-center p-3" style="max-height:70vh; overflow-y:auto;">
+                        <div id="proofViewerContainer">
+                            <img id="proofPreviewImg" src="" alt="Minh chứng" class="img-fluid rounded border shadow-sm" style="max-height:60vh; display:none;" />
+                            <div id="proofPdfNotice" style="display:none;" class="p-4 bg-light rounded">
+                                <i class="ti ti-file-text fs-1 text-primary d-block mb-2"></i>
+                                <h5>Tệp minh chứng định dạng PDF</h5>
+                                <a id="proofPdfLink" href="#" target="_blank" class="btn btn-primary btn-sm">
+                                    <i class="ti ti-external-link me-1"></i> Mở xem file PDF trong tab mới
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer justify-content-between">
+                        <span class="text-muted fs-6"><i class="ti ti-shield-check text-success me-1"></i>Đối soát dấu mộc đỏ, thông tin hộ nghèo, thương binh liệt sĩ</span>
+                        <button type="button" class="btn btn-secondary" onclick="closeProofPreviewModal()">Đóng</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JAVASCRIPT ĐIỀU KHIỂN BỘ LỌC ĐA CHIỀU & CÁC MODAL -->
         <script>
-            function openApproveModal(id, code, student, bldg, rtype) {
+            document.addEventListener("DOMContentLoaded", function () {
+                const searchInput = document.getElementById("regFilterSearch");
+                const statusSelect = document.getElementById("regFilterStatus");
+                const prioritySelect = document.getElementById("regFilterPriority");
+                const roomTypeSelect = document.getElementById("regFilterRoomType");
+                const countLabel = document.getElementById("regFilterCount");
+                const rows = document.querySelectorAll("#regTable tbody tr.reg-row");
+
+                function applyRegFilters() {
+                    const searchVal = (searchInput?.value || "").trim().toLowerCase();
+                    const statusVal = statusSelect?.value || "all";
+                    const priorityVal = prioritySelect?.value || "all";
+                    const roomTypeVal = roomTypeSelect?.value || "all";
+
+                    let visibleCount = 0;
+                    rows.forEach(row => {
+                        const rowSearch = row.getAttribute("data-search") || "";
+                        const rowStatus = row.getAttribute("data-status") || "";
+                        const rowScore = row.getAttribute("data-score") || "";
+                        const rowRoomType = row.getAttribute("data-roomtype") || "";
+
+                        const matchSearch = !searchVal || rowSearch.includes(searchVal);
+                        const matchStatus = statusVal === "all" || rowStatus === statusVal;
+                        const matchPriority = priorityVal === "all" || rowScore === priorityVal;
+                        const matchRoomType = roomTypeVal === "all" || rowRoomType === roomTypeVal;
+
+                        const isMatch = matchSearch && matchStatus && matchPriority && matchRoomType;
+                        row.style.display = isMatch ? "" : "none";
+                        if (isMatch) visibleCount++;
+                    });
+
+                    if (countLabel) {
+                        countLabel.innerText = `Hiển thị ${visibleCount} / ${rows.length} hồ sơ`;
+                    }
+                }
+
+                searchInput?.addEventListener("input", applyRegFilters);
+                statusSelect?.addEventListener("change", applyRegFilters);
+                prioritySelect?.addEventListener("change", applyRegFilters);
+                roomTypeSelect?.addEventListener("change", applyRegFilters);
+            });
+
+            // Modal Handlers
+            function openApproveModal(id, code, student, bldg, rtype, score, priorityTag) {
                 document.getElementById('approveRegId').value = id;
                 document.getElementById('approveModalCode').innerText = code;
                 document.getElementById('approveModalStudent').innerText = student;
                 document.getElementById('approveModalPref').innerText = bldg + ' · ' + rtype;
+                document.getElementById('approveModalScore').innerText = score + ' điểm (' + priorityTag + ')';
                 document.getElementById('modalApprove').style.display = 'block';
             }
             function closeApproveModal() {
                 document.getElementById('modalApprove').style.display = 'none';
             }
+
+            function openRequestChangesModal(id, code, student) {
+                document.getElementById('reqChangesId').value = id;
+                document.getElementById('reqChangesModalCode').innerText = code;
+                document.getElementById('reqChangesModalStudent').innerText = student;
+                document.getElementById('modalRequestChanges').style.display = 'block';
+            }
+            function closeRequestChangesModal() {
+                document.getElementById('modalRequestChanges').style.display = 'none';
+            }
+
+            function openWaitlistModal(id, code, student) {
+                document.getElementById('waitlistId').value = id;
+                document.getElementById('waitlistModalCode').innerText = code;
+                document.getElementById('waitlistModalStudent').innerText = student;
+                document.getElementById('modalWaitlist').style.display = 'block';
+            }
+            function closeWaitlistModal() {
+                document.getElementById('modalWaitlist').style.display = 'none';
+            }
+
             function openRejectModal(id, code, student) {
                 document.getElementById('rejectRegId').value = id;
                 document.getElementById('rejectModalCode').innerText = code;
@@ -858,6 +1176,27 @@
             }
             function closeRejectModal() {
                 document.getElementById('modalReject').style.display = 'none';
+            }
+
+            function openProofPreviewModal(code, student, priorityTag, score, fileUrl) {
+                document.getElementById('proofModalInfo').innerText = `${student} (${code}) · Diện: ${priorityTag} (${score} điểm)`;
+                const imgEl = document.getElementById('proofPreviewImg');
+                const pdfNotice = document.getElementById('proofPdfNotice');
+                const pdfLink = document.getElementById('proofPdfLink');
+
+                if (fileUrl.toLowerCase().endsWith('.pdf')) {
+                    imgEl.style.display = 'none';
+                    pdfNotice.style.display = 'block';
+                    pdfLink.href = fileUrl;
+                } else {
+                    imgEl.src = fileUrl;
+                    imgEl.style.display = 'inline-block';
+                    pdfNotice.style.display = 'none';
+                }
+                document.getElementById('modalProofPreview').style.display = 'block';
+            }
+            function closeProofPreviewModal() {
+                document.getElementById('modalProofPreview').style.display = 'none';
             }
         </script>
     }
@@ -913,7 +1252,7 @@
                             {
                                 <th>@column</th>
                             }
-                            @if (Model.Rows.Any(x => x.Actions.Count > 0))
+                            @if (Model.Rows.Any(x => x.Actions.Count > 0) || Model.Section is "contracts" or "payments" or "deposits")
                             {
                                 <th class="text-center">Thao tác</th>
                             }
@@ -943,10 +1282,35 @@
                                         }
                                     </td>
                                 }
-                                @if (Model.Rows.Any(x => x.Actions.Count > 0))
+                                @if (Model.Rows.Any(x => x.Actions.Count > 0) || Model.Section is "contracts" or "payments" or "deposits")
                                 {
                                     <td class="text-center">
                                         <div class="btn-list justify-content-center">
+                                            @if (Model.Section == "contracts")
+                                            {
+                                                <a asp-controller="Dormitory" asp-action="ContractView" asp-route-id="@row.Id" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="ti ti-file-text me-1"></i> Xem văn bản
+                                                </a>
+                                            }
+                                            else if (Model.Section == "payments" && row.Cells.Count >= 7)
+                                            {
+                                                var invCode = row.Cells[0];
+                                                var remaining = row.Cells.Count >= 6 ? row.Cells[5] : "0 ₫";
+                                                <button type="button" class="btn btn-sm btn-outline-success" 
+                                                        onclick="openVietQRModal('@invCode', '@remaining', 'KTX @invCode')">
+                                                    <i class="ti ti-qrcode me-1"></i> Quét VietQR
+                                                </button>
+                                            }
+                                            else if (Model.Section == "deposits" && row.Cells.Count >= 5)
+                                            {
+                                                var txCode = row.Cells[0];
+                                                var contractCode = row.Cells[1];
+                                                var amount = row.Cells[4];
+                                                <button type="button" class="btn btn-sm btn-outline-success" 
+                                                        onclick="openVietQRModal('@txCode', '@amount', 'COC @contractCode')">
+                                                    <i class="ti ti-qrcode me-1"></i> Quét VietQR
+                                                </button>
+                                            }
                                             @foreach (var action in row.Actions)
                                             {
                                                 <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
@@ -976,7 +1340,254 @@
 <!-- ============================================== -->
 <!-- 4. CREATE / ACTION FORM CARD                  -->
 <!-- ============================================== -->
-@if (Model.FormTitle is not null && Model.Fields.Count > 0)
+@if (Model.Section == "registrations" && Model.FormTitle is not null)
+{
+    <!-- DEDICATED ROOM REGISTRATION FORM (THEO 7 NHÓM BẢNG TỔNG HỢP CHI TIẾT) -->
+    <div class="card shadow-sm border-0 mb-4" id="create-form">
+        <div class="card-header bg-white py-3 border-bottom">
+            <div class="d-flex align-items-center">
+                <span class="avatar avatar-md bg-primary-lt text-primary rounded me-3">
+                    <i class="ti ti-file-pencil fs-1"></i>
+                </span>
+                <div>
+                    <h3 class="card-title fw-bold mb-0">Đơn Đăng Ký Lưu Trú Ký Túc Xá</h3>
+                    <small class="text-muted">Hoàn thiện đầy đủ các nhóm thông tin bên dưới để Ban Quản lý xét duyệt chỗ ở và lập hợp đồng.</small>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-4">
+            <form asp-controller="Dormitory" asp-action="Create" method="post" enctype="multipart/form-data">
+                <!-- Group 7: Dữ liệu hệ thống ẩn -->
+                <input type="hidden" name="section" value="registrations" />
+                <input type="hidden" name="periodId" value="2026-2027" />
+                <input type="hidden" name="formType" value="student_detailed_v2" />
+
+                <!-- ========================================== -->
+                <!-- NHÓM 1: NGUYỆN VỌNG PHÒNG                  -->
+                <!-- ========================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-blue text-white rounded-circle p-2 me-2">1</span>
+                        <h4 class="fw-bold text-dark mb-0 fs-3">Nguyện vọng phòng ở</h4>
+                    </div>
+                    <div class="row g-3 p-3 rounded bg-light border">
+                        <!-- Tòa nhà mong muốn -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Tòa nhà mong muốn <small class="text-muted">(Lọc theo khu Nam / Nữ)</small>
+                            </label>
+                            <select name="buildingId" class="form-select">
+                                <option value="">-- Tự động phân bổ theo giới tính (Tòa A: Nam, Tòa B: Nữ) --</option>
+                                <option value="1">Tòa A · Khu Nam (Cơ sở chính)</option>
+                                <option value="2">Tòa B · Khu Nữ (Cơ sở chính)</option>
+                            </select>
+                        </div>
+
+                        <!-- Loại phòng nguyện vọng (*) -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Loại phòng nguyện vọng <span class="text-danger">*</span>
+                            </label>
+                            <select name="roomType" class="form-select" required>
+                                <option value="4 người">Phòng 4 người (Tiêu chuẩn · Điều hòa & Nóng lạnh · 650.000 ₫/tháng)</option>
+                                <option value="6 người">Phòng 6 người (Tiết kiệm · Nóng lạnh & Quạt trần · 520.000 ₫/tháng)</option>
+                                <option value="2 người">Phòng 2 người (Chất lượng cao VIP · Đầy đủ tiện nghi · 1.200.000 ₫/tháng)</option>
+                                <option value="8 người">Phòng 8 người (Tập thể sinh viên · 420.000 ₫/tháng)</option>
+                            </select>
+                        </div>
+
+                        <!-- Vị trí giường mong muốn -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Vị trí giường mong muốn
+                            </label>
+                            <select name="bedPosition" class="form-select">
+                                <option value="none">-- Không yêu cầu (BQL tự sắp xếp) --</option>
+                                <option value="Giường tầng dưới (Tầng 1)">Giường tầng dưới (Tầng 1 - Thuận tiện đi lại)</option>
+                                <option value="Giường tầng trên (Tầng 2)">Giường tầng trên (Tầng 2 - Yên tĩnh, thoáng gió)</option>
+                            </select>
+                        </div>
+
+                        <!-- Tầng mong muốn -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Tầng mong muốn
+                            </label>
+                            <select name="floorPreference" class="form-select">
+                                <option value="none">-- Không yêu cầu (BQL tự sắp xếp) --</option>
+                                <option value="Tầng thấp (Tầng 1 - 3)">Tầng thấp (Tầng 1 - 3 · Thuận tiện di chuyển)</option>
+                                <option value="Tầng cao (Tầng 4 - 6)">Tầng cao (Tầng 4 - 6 · View đẹp, thoáng đãng, yên tĩnh)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- NHÓM 2: THỜI GIAN LƯU TRÚ                  -->
+                <!-- ========================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-teal text-white rounded-circle p-2 me-2">2</span>
+                        <h4 class="fw-bold text-dark mb-0 fs-3">Thời gian lưu trú dự kiến</h4>
+                    </div>
+                    <div class="row g-3 p-3 rounded bg-light border">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Ngày bắt đầu lưu trú <span class="text-danger">*</span>
+                                <small class="text-muted d-block fs-6">Mốc tính tiền phòng và bàn giao chìa khóa</small>
+                            </label>
+                            <input type="date" name="startDate" class="form-control" required value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Ngày kết thúc lưu trú <span class="text-danger">*</span>
+                                <small class="text-muted d-block fs-6">Hạn kết thúc hợp đồng theo năm học (chuẩn 10 tháng)</small>
+                            </label>
+                            <input type="date" name="endDate" class="form-control" required value="@DateTime.Now.AddMonths(10).ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- NHÓM 3: ĐỐI TƯỢNG & MINH CHỨNG            -->
+                <!-- ========================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-warning text-white rounded-circle p-2 me-2">3</span>
+                        <h4 class="fw-bold text-dark mb-0 fs-3">Đối tượng ưu tiên & Giấy tờ minh chứng</h4>
+                    </div>
+                    <div class="row g-3 p-3 rounded bg-light border">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Diện đối tượng ưu tiên chính sách
+                            </label>
+                            <select name="priority" id="regPrioritySelect" class="form-select">
+                                <option value="Không">Không thuộc diện ưu tiên (Xét duyệt thông thường)</option>
+                                <option value="Con thương binh, liệt sĩ / Gia đình có công">Con thương binh, liệt sĩ / Gia đình có công (Ưu tiên 1)</option>
+                                <option value="Hộ nghèo, cận nghèo">Hộ nghèo, cận nghèo có giấy xác nhận (Ưu tiên 2)</option>
+                                <option value="Sinh viên khuyết tật">Sinh viên khuyết tật (Ưu tiên 3)</option>
+                                <option value="Vùng sâu, vùng xa, hải đảo">Vùng sâu, vùng xa, biên giới, hải đảo (Ưu tiên 4)</option>
+                                <option value="Tân sinh viên năm nhất ngoại tỉnh">Tân sinh viên năm nhất ngoại tỉnh (Ưu tiên 5)</option>
+                                <option value="Cán bộ Đoàn - Hội xuất sắc">Cán bộ Đoàn - Hội có thành tích xuất sắc (Ưu tiên 6)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Đính kèm file minh chứng <small class="text-muted">(Ảnh chụp hoặc file PDF)</small>
+                                <small class="text-muted d-block fs-6">Cần thiết khi chọn diện chính sách ưu tiên (Tối đa 10MB)</small>
+                            </label>
+                            <input type="file" name="proofFile" id="regProofFileInput" class="form-control" accept=".pdf,.png,.jpg,.jpeg" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- NHÓM 4: HẬU CẦN & ĐỜI SỐNG                 -->
+                <!-- ========================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-indigo text-white rounded-circle p-2 me-2">4</span>
+                        <h4 class="fw-bold text-dark mb-0 fs-3">Hậu cần & Nhu cầu đời sống</h4>
+                    </div>
+                    <div class="row g-3 p-3 rounded bg-light border">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Đăng ký gửi xe tại KTX</label>
+                            <div class="d-flex gap-3 pt-2">
+                                <label class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="radio" name="parkingRegister" value="no" checked id="parkOptNo" onchange="toggleVehicleInput(false)">
+                                    <span class="form-check-label">Không gửi xe</span>
+                                </label>
+                                <label class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="radio" name="parkingRegister" value="yes" id="parkOptYes" onchange="toggleVehicleInput(true)">
+                                    <span class="form-check-label text-primary fw-medium">Có gửi xe</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8" id="vehiclePlateWrap" style="display:none;">
+                            <label class="form-label fw-semibold">
+                                Loại xe & Biển số xe <small class="text-muted">(Tích hợp thẻ xe & barrier quét biển)</small>
+                            </label>
+                            <input type="text" name="vehiclePlate" id="vehiclePlateInput" class="form-control" placeholder="VD: Xe máy Honda Wave Alpha - Biển số 29B1-678.90..." />
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">
+                                Ghi chú & Nguyện vọng bổ sung
+                                <small class="text-muted font-weight-normal">(Nhập MSSV nếu muốn xếp chung phòng với bạn bè, yêu cầu giường, thiết bị...)</small>
+                            </label>
+                            <textarea name="note" rows="2" class="form-control" placeholder="VD: Muốn ở cùng bạn Nguyễn Văn A (MSSV: 20260002); mong muốn phòng thoáng gió..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- NHÓM 5: LIÊN HỆ AN TOÀN                    -->
+                <!-- ========================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-danger text-white rounded-circle p-2 me-2">5</span>
+                        <h4 class="fw-bold text-dark mb-0 fs-3">Liên hệ an toàn khẩn cấp</h4>
+                    </div>
+                    <div class="row g-3 p-3 rounded bg-light border">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Họ tên người liên hệ khẩn cấp <span class="text-danger">*</span>
+                                <small class="text-muted d-block fs-6">Họ tên bố, mẹ hoặc người giám hộ hợp pháp</small>
+                            </label>
+                            <input type="text" name="emergencyContactName" class="form-control" required placeholder="VD: Nguyễn Văn Nam (Bố)" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">
+                                Số điện thoại khẩn cấp <span class="text-danger">*</span>
+                                <small class="text-muted d-block fs-6">Liên lạc khi có sự cố y tế hoặc an ninh nội trú</small>
+                            </label>
+                            <input type="tel" name="emergencyContactPhone" class="form-control" required pattern="[0-9]{10,11}" placeholder="VD: 0912345678" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========================================== -->
+                <!-- NHÓM 6: PHÁP LÝ & CAM KẾT                  -->
+                <!-- ========================================== -->
+                <div class="mb-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <span class="badge bg-dark text-white rounded-circle p-2 me-2">6</span>
+                        <h4 class="fw-bold text-dark mb-0 fs-3">Pháp lý & Cam kết nội quy</h4>
+                    </div>
+                    <div class="p-3 rounded bg-blue-lt border border-primary-subtle">
+                        <label class="form-check m-0">
+                            <input class="form-check-input me-2" type="checkbox" name="policyAgreed" id="policyAgreedCheckbox" required value="true" />
+                            <span class="form-check-label text-dark fs-5 fw-medium">
+                                <strong>Tôi cam kết:</strong> Toàn bộ thông tin khai báo trong đơn là hoàn toàn chính xác. Tôi đã đọc, hiểu rõ và cam kết tuân thủ nghiêm túc <strong>Nội quy Ký túc xá</strong>, quy định giờ giấc giới nghiêm, nộp đầy đủ tiền phòng, tiền cọc và phí dịch vụ đúng thời hạn quy định.
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-flex align-items-center justify-content-between pt-3 border-top">
+                    <button class="btn btn-primary btn-lg px-5 shadow-sm" type="submit">
+                        <i class="ti ti-send me-2"></i> Gửi Đơn Đăng Ký Lưu Trú
+                    </button>
+                    <span class="text-muted fs-6"><span class="text-danger">*</span> Các trường có dấu sao đỏ là bắt buộc phải điền.</span>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleVehicleInput(show) {
+            var wrap = document.getElementById('vehiclePlateWrap');
+            var input = document.getElementById('vehiclePlateInput');
+            if (wrap) {
+                wrap.style.display = show ? 'block' : 'none';
+                if (show && input) input.focus();
+            }
+        }
+    </script>
+}
+else if (Model.FormTitle is not null && Model.Fields.Count > 0)
 {
     <div class="card shadow-sm border-0 mb-4" id="create-form">
         <div class="card-header bg-white py-3">
@@ -1038,3 +1649,291 @@
         </div>
     </div>
 }
+
+<!-- ==========================================================================
+     MODAL: SƠ ĐỒ 2D TRỰC QUAN PHÒNG & GIƯỜNG (VISUAL 2D ROOM BLUEPRINT)
+     ========================================================================== -->
+<div class="modal fade" id="room2DBlueprintModal" tabindex="-1" aria-labelledby="room2DBlueprintLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white py-3">
+                <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-primary text-white rounded me-2">
+                        <i class="ti ti-layout-grid fs-3"></i>
+                    </span>
+                    <div>
+                        <h4 class="modal-title fw-bold text-white mb-0" id="room2DModalTitle">Sơ đồ 2D Phòng</h4>
+                        <small class="text-white-50" id="room2DModalSubtitle">Mô phỏng mặt bằng vị trí giường và tiện ích phòng</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Info badges bar -->
+                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between p-2 rounded bg-light border mb-3">
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="badge bg-primary fs-6 px-2 py-1" id="room2DTypeBadge">4 người</span>
+                        <span class="badge bg-teal fs-6 px-2 py-1" id="room2DGenderBadge">Khu Nam</span>
+                        <span class="text-success fw-bold fs-5" id="room2DPriceDisplay">650.000 ₫/tháng</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 fs-6">
+                        <span class="d-inline-flex align-items-center"><span class="badge bg-success me-1 p-1"></span> Trống</span>
+                        <span class="d-inline-flex align-items-center"><span class="badge bg-primary me-1 p-1"></span> Đang chọn</span>
+                        <span class="d-inline-flex align-items-center"><span class="badge bg-secondary me-1 p-1"></span> Đã có người</span>
+                    </div>
+                </div>
+
+                <!-- 2D Architectural Blueprint Canvas -->
+                <div class="room-blueprint-2d mb-3" id="roomBlueprintArea">
+                    <!-- Window indicator -->
+                    <div class="blueprint-window"></div>
+                    <div class="blueprint-window-label"><i class="ti ti-window me-1"></i> Cửa sổ đón gió</div>
+
+                    <!-- Balcony indicator -->
+                    <div class="blueprint-balcony" title="Ban công phơi đồ"></div>
+
+                    <!-- Bunk Beds Grid -->
+                    <div class="row g-3 py-4" id="blueprintBedsContainer">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+
+                    <!-- Door indicator -->
+                    <div class="blueprint-door"></div>
+                    <div class="blueprint-door-label"><i class="ti ti-door me-1"></i> Cửa ra vào</div>
+                </div>
+
+                <!-- Amenities Checklist -->
+                <div class="mb-3">
+                    <h5 class="fw-bold text-dark mb-2"><i class="ti ti-sparkles me-1 text-warning"></i> Tiện ích & Trang thiết bị phòng:</h5>
+                    <div class="d-flex flex-wrap gap-2" id="blueprintAmenitiesContainer">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- Selection Call-to-action -->
+                <div class="p-3 rounded bg-blue-lt border border-primary-subtle d-flex flex-wrap align-items-center justify-content-between">
+                    <div>
+                        <div class="text-dark fw-bold fs-5" id="blueprintSelectedBedTitle">Chưa chọn giường nào</div>
+                        <div class="text-muted fs-6" id="blueprintSelectedBedSubtitle">Nhấp vào một giường màu xanh lá trên sơ đồ để chọn giữ chỗ.</div>
+                    </div>
+                    <a href="/Dormitory/Workspace?section=registrations#create-form" class="btn btn-primary" id="blueprintApplyBtn" style="display:none;">
+                        <i class="ti ti-pencil-plus me-1"></i> Đăng ký giữ chỗ giường này
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: THANH TOÁN VIETQR TỰ ĐỘNG (DYNAMIC VIETQR PAYMENT)
+     ========================================================================== -->
+<div class="modal fade" id="vietQrPaymentModal" tabindex="-1" aria-labelledby="vietQrPaymentLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white py-3">
+                <div class="d-flex align-items-center">
+                    <span class="avatar avatar-sm bg-success text-white rounded me-2">
+                        <i class="ti ti-qrcode fs-3"></i>
+                    </span>
+                    <div>
+                        <h4 class="modal-title fw-bold text-white mb-0">Thanh toán VietQR Tự động</h4>
+                        <small class="text-white-50">Chuẩn Napas 247 · Gạch nợ đối soát tức thì</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <!-- VietQR Image with Live Loading -->
+                <div class="vietqr-image-wrap mb-3">
+                    <img id="vietQrImageElement" src="" alt="Mã VietQR Thanh Toán" width="220" height="220" class="img-fluid rounded" />
+                </div>
+                <div class="text-muted fs-6 mb-3">
+                    <i class="ti ti-scan me-1 text-primary"></i> Mở ứng dụng ngân hàng bất kỳ (MB, Vietcombank, Techcombank, MoMo...) để quét mã
+                </div>
+
+                <!-- Account Information Box with Copy Buttons -->
+                <div class="vietqr-card p-3 text-start bg-light mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <span class="text-muted fs-6">Ngân hàng thụ hưởng:</span>
+                        <strong class="text-dark">MBBank (Ngân hàng Quân Đội)</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <span class="text-muted fs-6">Số tài khoản KTX:</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <strong class="text-primary fs-5" id="vietQrAccNo">0389123456</strong>
+                            <button type="button" class="btn btn-outline-secondary btn-sm vietqr-copy-btn" onclick="copyToClipboard('0389123456', this)">Sao chép</button>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <span class="text-muted fs-6">Tên chủ tài khoản:</span>
+                        <strong class="text-dark">BAN QUAN LY KTX DAI HOC</strong>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <span class="text-muted fs-6">Số tiền cần nộp:</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <strong class="text-danger fs-4" id="vietQrAmountText">0 ₫</strong>
+                            <button type="button" class="btn btn-outline-secondary btn-sm vietqr-copy-btn" id="vietQrCopyAmountBtn">Sao chép</button>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted fs-6">Cú pháp đối soát:</span>
+                        <div class="d-flex align-items-center gap-2">
+                            <code class="text-primary fw-bold fs-6" id="vietQrContentText">KTX_...</code>
+                            <button type="button" class="btn btn-outline-secondary btn-sm vietqr-copy-btn" id="vietQrCopyContentBtn">Sao chép</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live note -->
+                <div class="p-2 rounded bg-success-lt text-success fs-6 text-start">
+                    <i class="ti ti-shield-check me-1"></i> Hệ thống tự động gạch nợ trong vòng 1-3 phút sau khi giao dịch thành công mà không cần gửi ảnh biên lai.
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between py-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-success btn-sm px-3" onclick="confirmPaymentSuccess()">
+                    <i class="ti ti-check me-1"></i> Tôi đã chuyển khoản xong
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================================
+     GLOBAL SCRIPT HELPERS (2D BLUEPRINT & VIETQR)
+     ========================================================================== -->
+<script>
+    var currentSelectedBed = null;
+
+    function showRoom2DBlueprint(roomNum, roomType, priceStr, genderStr, amenitiesStr, bedsList) {
+        document.getElementById('room2DModalTitle').textContent = 'Sơ đồ 2D Phòng ' + roomNum;
+        document.getElementById('room2DModalSubtitle').textContent = 'Mô phỏng mặt bằng không gian và định vị giường phòng ' + roomNum;
+        document.getElementById('room2DTypeBadge').textContent = roomType;
+        document.getElementById('room2DGenderBadge').textContent = genderStr;
+        document.getElementById('room2DPriceDisplay').textContent = priceStr + ' ₫/tháng';
+
+        // Render Amenities
+        var amenContainer = document.getElementById('blueprintAmenitiesContainer');
+        amenContainer.innerHTML = '';
+        var amenities = amenitiesStr.split(',').filter(function(x) { return x.trim().length > 0; });
+        amenities.forEach(function(amen) {
+            var badge = document.createElement('span');
+            badge.className = 'badge bg-light text-dark border p-2 fs-6';
+            badge.innerHTML = '<i class="ti ti-check text-success me-1"></i> ' + amen.trim();
+            amenContainer.appendChild(badge);
+        });
+
+        // Render Beds in 2D layout
+        var bedsContainer = document.getElementById('blueprintBedsContainer');
+        bedsContainer.innerHTML = '';
+        currentSelectedBed = null;
+        updateSelectedBedUI(null, roomNum);
+
+        bedsList.forEach(function(bed, idx) {
+            var col = document.createElement('div');
+            col.className = 'col-6 col-md-3';
+
+            var isAvail = bed.Status === 'available';
+            var bedCard = document.createElement('div');
+            bedCard.className = 'bunk-bed-2d ' + (isAvail ? 'bed-available' : 'bed-occupied');
+            bedCard.id = 'bed-item-' + bed.Id;
+
+            var pos = bed.Position || (idx % 2 === 0 ? 'Tầng 1 (Dưới)' : 'Tầng 2 (Trên)');
+            var prox = bed.Proximity || (idx < 2 ? 'Cạnh cửa sổ' : (idx < 4 ? 'Gần quạt' : 'Cạnh cửa'));
+
+            bedCard.innerHTML =
+                '<div class="d-flex justify-content-between align-items-center mb-1">' +
+                    '<strong class="fs-4 text-dark"><i class="ti ti-bed me-1 text-primary"></i> ' + bed.BedNumber + '</strong>' +
+                    '<span class="badge ' + (isAvail ? 'bg-success text-white' : 'bg-secondary text-white') + ' fs-6 px-1">' +
+                        (isAvail ? 'Trống' : 'Đã ở') +
+                    '</span>' +
+                '</div>' +
+                '<div class="text-muted fs-6 mb-1"><i class="ti ti-stairs me-1"></i> ' + pos + '</div>' +
+                '<div class="text-secondary fs-6"><i class="ti ti-map-pin me-1"></i> ' + prox + '</div>';
+
+            if (isAvail) {
+                bedCard.onclick = function() {
+                    // Deselect previous
+                    document.querySelectorAll('.bunk-bed-2d').forEach(function(el) {
+                        el.classList.remove('bed-selected');
+                    });
+                    bedCard.classList.add('bed-selected');
+                    currentSelectedBed = bed;
+                    updateSelectedBedUI(bed, roomNum);
+                };
+            }
+
+            col.appendChild(bedCard);
+            bedsContainer.appendChild(col);
+        });
+
+        var modal = new bootstrap.Modal(document.getElementById('room2DBlueprintModal'));
+        modal.show();
+    }
+
+    function updateSelectedBedUI(bed, roomNum) {
+        var titleEl = document.getElementById('blueprintSelectedBedTitle');
+        var subEl = document.getElementById('blueprintSelectedBedSubtitle');
+        var btnEl = document.getElementById('blueprintApplyBtn');
+
+        if (bed) {
+            titleEl.textContent = 'Bạn đang chọn: Giường ' + bed.BedNumber + ' (Phòng ' + roomNum + ')';
+            subEl.textContent = (bed.Position || 'Tầng dưới') + ' · ' + (bed.Proximity || 'Gần cửa sổ') + ' · Trạng thái: Sẵn sàng đăng ký';
+            btnEl.style.display = 'inline-flex';
+            btnEl.href = '/Dormitory/Workspace?section=registrations#create-form';
+        } else {
+            titleEl.textContent = 'Chưa chọn giường nào';
+            subEl.textContent = 'Nhấp vào một giường màu xanh lá trên sơ đồ để chọn giữ chỗ.';
+            btnEl.style.display = 'none';
+        }
+    }
+
+    function openVietQRModal(code, amountStr, contentStr) {
+        // Strip non-numeric from amount
+        var rawAmount = amountStr.replace(/[^0-9]/g, '') || '650000';
+        var safeContent = encodeURIComponent(contentStr);
+
+        var qrUrl = 'https://img.vietqr.io/image/970422-0389123456-compact2.png?amount=' + rawAmount + '&addInfo=' + safeContent + '&accountName=BAN%20QUAN%20LY%20KTX%20DAI%20HOC';
+        
+        document.getElementById('vietQrImageElement').src = qrUrl;
+        document.getElementById('vietQrAmountText').textContent = parseInt(rawAmount).toLocaleString('vi-VN') + ' ₫';
+        document.getElementById('vietQrContentText').textContent = contentStr;
+
+        document.getElementById('vietQrCopyAmountBtn').onclick = function() {
+            copyToClipboard(rawAmount, this);
+        };
+        document.getElementById('vietQrCopyContentBtn').onclick = function() {
+            copyToClipboard(contentStr, this);
+        };
+
+        var modal = new bootstrap.Modal(document.getElementById('vietQrPaymentModal'));
+        modal.show();
+    }
+
+    function copyToClipboard(text, btnElement) {
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function() {
+                var oldText = btnElement.textContent;
+                btnElement.textContent = 'Đã chép!';
+                btnElement.classList.remove('btn-outline-secondary');
+                btnElement.classList.add('btn-success');
+                setTimeout(function() {
+                    btnElement.textContent = oldText;
+                    btnElement.classList.remove('btn-success');
+                    btnElement.classList.add('btn-outline-secondary');
+                }, 1500);
+            });
+        }
+    }
+
+    function confirmPaymentSuccess() {
+        alert('Cảm ơn bạn! Hệ thống đã ghi nhận thông tin chuyển khoản và đang kích hoạt webhook đối soát gạch nợ tự động.');
+        var modalEl = document.getElementById('vietQrPaymentModal');
+        var modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+    }
+</script>

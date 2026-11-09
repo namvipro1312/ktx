@@ -30,24 +30,55 @@ body {
     padding-bottom: 0.75rem;
 }
 
+/* Các nút menu hiển thị màu trắng rõ ràng, dễ nhìn */
 .navbar-vertical .nav-link {
-    font-size: 0.85rem;
-    padding: 0.45rem 0.75rem;
+    font-size: 0.9rem;
+    padding: 0.55rem 0.85rem;
     border-radius: 6px;
-    margin: 1px 0;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    margin: 2px 0;
+    color: #ffffff !important; /* Trắng sáng rõ ràng */
+    opacity: 0.92;
+    transition: all 0.15s ease-in-out;
+}
+
+.navbar-vertical .nav-link .nav-link-icon,
+.navbar-vertical .nav-link i {
+    color: #cbd5e1 !important; /* Icon sáng rõ */
+    opacity: 1;
+}
+
+.navbar-vertical .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    color: #ffffff !important;
+    opacity: 1;
+}
+
+.navbar-vertical .nav-link:hover .nav-link-icon,
+.navbar-vertical .nav-link:hover i {
+    color: #ffffff !important;
 }
 
 .navbar-vertical .nav-link.active,
 .navbar-vertical .nav-item.active > .nav-link {
-    background-color: rgba(32, 107, 196, 0.2) !important;
+    background-color: #0054a6 !important;
     color: #ffffff !important;
-    font-weight: 600;
+    font-weight: 700 !important;
+    opacity: 1;
+    box-shadow: 0 2px 8px rgba(0, 84, 166, 0.45);
 }
 
-.navbar-vertical .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+.navbar-vertical .nav-link.active .nav-link-icon,
+.navbar-vertical .nav-link.active i {
     color: #ffffff !important;
+}
+
+/* Tiêu đề nhóm menu (ĐIỀU HÀNH & LƯU TRÚ, KHÔNG GIAN, VẬN HÀNH...) */
+.navbar-vertical .sidebar-group-header,
+.navbar-vertical .nav-item.text-uppercase {
+    color: #94a3b8 !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em;
 }
 
 .navbar-vertical .nav-link-icon {
@@ -231,4 +262,172 @@ body {
     border-color: #f76707;
     font-weight: 600;
     box-shadow: 0 1px 3px rgba(247, 103, 7, 0.3);
+}
+
+/* ==========================================================================
+   DIGITAL DORM PASS (THẺ KÝ TÚC XÁ ĐIỆN TỬ)
+   ========================================================================== */
+.dorm-pass-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0a3d62 100%);
+    border-radius: 16px;
+    color: #ffffff;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dorm-pass-card::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(0, 84, 166, 0.15) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.dorm-pass-hologram {
+    background: linear-gradient(45deg, #f59e0b, #ec4899, #3b82f6, #10b981);
+    background-size: 300% 300%;
+    animation: hologramShine 6s ease infinite;
+    height: 4px;
+    width: 100%;
+    border-radius: 2px;
+}
+
+@keyframes hologramShine {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.dorm-pass-qr-wrap {
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 12px;
+    display: inline-block;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.dorm-barcode {
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 4px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+}
+
+/* ==========================================================================
+   2D ROOM ARCHITECTURAL BLUEPRINT
+   ========================================================================== */
+.room-blueprint-2d {
+    background-color: #f8fafc;
+    border: 2px dashed #94a3b8;
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    min-height: 280px;
+}
+
+.blueprint-door {
+    position: absolute;
+    bottom: -2px;
+    left: 40px;
+    width: 60px;
+    height: 6px;
+    background-color: #0054a6;
+    border-radius: 3px;
+}
+
+.blueprint-door-label {
+    position: absolute;
+    bottom: 8px;
+    left: 40px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0054a6;
+    text-transform: uppercase;
+}
+
+.blueprint-window {
+    position: absolute;
+    top: -2px;
+    right: 50px;
+    width: 80px;
+    height: 6px;
+    background-color: #0ea5e9;
+    border-radius: 3px;
+}
+
+.blueprint-window-label {
+    position: absolute;
+    top: 8px;
+    right: 50px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #0ea5e9;
+    text-transform: uppercase;
+}
+
+.blueprint-balcony {
+    position: absolute;
+    top: 10px;
+    right: -2px;
+    width: 6px;
+    height: 70px;
+    background-color: #10b981;
+    border-radius: 3px;
+}
+
+.bunk-bed-2d {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 10px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.bunk-bed-2d:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 84, 166, 0.15);
+    border-color: #0054a6;
+}
+
+.bunk-bed-2d.bed-available {
+    border-left: 4px solid #2fb344;
+}
+
+.bunk-bed-2d.bed-occupied {
+    background-color: #f1f5f9;
+    border-left: 4px solid #94a3b8;
+    opacity: 0.75;
+}
+
+.bunk-bed-2d.bed-selected {
+    border-left: 4px solid #0054a6;
+    background-color: #eff6ff;
+}
+
+/* ==========================================================================
+   VIETQR PAYMENT MODAL
+   ========================================================================== */
+.vietqr-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.vietqr-image-wrap {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 10px;
+    background: #ffffff;
+    display: inline-block;
+}
+
+.vietqr-copy-btn {
+    padding: 2px 8px !important;
+    font-size: 0.75rem !important;
 }

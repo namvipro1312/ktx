@@ -1,8 +1,8 @@
 @functions {
     public static string GetTablerIcon(string key) => key switch
     {
-        "" => "ti-dashboard",
-        "registrations" => "ti-user-check",
+        "" => "ti-home",
+        "registrations" => "ti-pencil-plus",
         "contracts" => "ti-file-certificate",
         "rooms" => "ti-bed",
         "buildings" => "ti-building",
@@ -30,28 +30,44 @@
     var isMaintenance = User.IsInRole("maintenance_staff");
     var active = ViewData["ActiveSection"]?.ToString() ?? "";
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
-    var nav = new (string Key, string Label, string Group)[]
-    {
-        ("", "Tổng quan", "Điều hành & Lưu trú"),
-        ("registrations", "Xét duyệt đăng ký", "Điều hành & Lưu trú"),
-        ("contracts", "Hợp đồng & Nhận/trả phòng", "Điều hành & Lưu trú"),
-        ("rooms", "Phòng & Giường", "Không gian"),
-        ("buildings", "Tòa nhà ký túc xá", "Không gian"),
-        ("assets", "Tài sản thiết bị", "Không gian"),
-        ("meters", "Công tơ điện nước", "Không gian"),
-        ("services", "Danh mục dịch vụ", "Vận hành"),
-        ("repairs", "Điều phối sửa chữa", "Vận hành"),
-        ("rules", "Nội quy ký túc xá", "Vận hành"),
-        ("guests", "Sổ khách thăm", "Vận hành"),
-        ("utilities", "Chốt số điện nước", "Tài chính"),
-        ("payments", "Hóa đơn & Thu phí", "Tài chính"),
-        ("deposits", "Tiền cọc lưu trú", "Tài chính"),
-        ("refunds", "Hoàn trả tiền cọc", "Tài chính"),
-        ("reports", "Báo cáo thống kê", "Tài chính"),
-        ("violations", "Kỷ luật vi phạm", "Hệ thống"),
-        ("notifications", "Thông báo nội bộ", "Hệ thống"),
-        ("users", "Phân quyền người dùng", "Hệ thống")
-    };
+    var nav = isStudent
+        ? new (string Key, string Label, string Group)[]
+        {
+            ("", "Tổng quan", "Phòng ở & Lưu trú"),
+            ("registrations", "Đăng ký phòng ở", "Phòng ở & Lưu trú"),
+            ("contracts", "Hợp đồng của tôi", "Phòng ở & Lưu trú"),
+            ("rooms", "Tra cứu phòng & giường", "Phòng ở & Lưu trú"),
+            ("repairs", "Báo hỏng & Sửa chữa", "Dịch vụ & Tiện ích"),
+            ("services", "Dịch vụ nội trú", "Dịch vụ & Tiện ích"),
+            ("rules", "Nội quy ký túc xá", "Dịch vụ & Tiện ích"),
+            ("payments", "Hóa đơn & Tiền phòng", "Tài chính cá nhân"),
+            ("deposits", "Tiền cọc lưu trú", "Tài chính cá nhân"),
+            ("refunds", "Hoàn tiền cọc", "Tài chính cá nhân"),
+            ("notifications", "Thông báo KTX", "Thông tin & Hỗ trợ"),
+            ("violations", "Lịch sử vi phạm", "Thông tin & Hỗ trợ")
+        }
+        : new (string Key, string Label, string Group)[]
+        {
+            ("", "Tổng quan", "Điều hành & Lưu trú"),
+            ("registrations", "Xét duyệt đăng ký", "Điều hành & Lưu trú"),
+            ("contracts", "Hợp đồng & Nhận/trả phòng", "Điều hành & Lưu trú"),
+            ("rooms", "Phòng & Giường", "Không gian"),
+            ("buildings", "Tòa nhà ký túc xá", "Không gian"),
+            ("assets", "Tài sản thiết bị", "Không gian"),
+            ("meters", "Công tơ điện nước", "Không gian"),
+            ("services", "Danh mục dịch vụ", "Vận hành"),
+            ("repairs", "Điều phối sửa chữa", "Vận hành"),
+            ("rules", "Nội quy ký túc xá", "Vận hành"),
+            ("guests", "Sổ khách thăm", "Vận hành"),
+            ("utilities", "Chốt số điện nước", "Tài chính"),
+            ("payments", "Hóa đơn & Thu phí", "Tài chính"),
+            ("deposits", "Tiền cọc lưu trú", "Tài chính"),
+            ("refunds", "Hoàn trả tiền cọc", "Tài chính"),
+            ("reports", "Báo cáo thống kê", "Tài chính"),
+            ("violations", "Kỷ luật vi phạm", "Hệ thống"),
+            ("notifications", "Thông báo nội bộ", "Hệ thống"),
+            ("users", "Phân quyền người dùng", "Hệ thống")
+        };
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -122,10 +138,12 @@
                     <ul class="navbar-nav pt-lg-2">
                         @foreach (var group in nav.GroupBy(x => x.Group))
                         {
-                            var visible = group.Where(x => isStudent ? x.Key is not ("reports" or "users" or "buildings" or "assets" or "meters" or "utilities") : isAdmin || x.Key == "notifications" || (isAccountant && x.Key is ("" or "payments" or "deposits" or "refunds" or "reports")) || (isMaintenance && x.Key is ("" or "rooms" or "repairs" or "assets" or "meters" or "utilities"))).ToList();
+                            var visible = isStudent 
+                                ? group.ToList() 
+                                : group.Where(x => isAdmin || x.Key == "notifications" || (isAccountant && x.Key is ("" or "payments" or "deposits" or "refunds" or "reports")) || (isMaintenance && x.Key is ("" or "rooms" or "repairs" or "assets" or "meters" or "utilities"))).ToList();
                             if (visible.Count == 0) { continue; }
 
-                            <li class="nav-item text-uppercase text-white-50 fw-semibold px-3 pt-3 pb-1 fs-6 tracking-wider">
+                            <li class="nav-item text-uppercase sidebar-group-header px-3 pt-3 pb-1 fs-6 tracking-wider">
                                 @group.Key
                             </li>
 
@@ -134,7 +152,7 @@
                                 var href = string.IsNullOrEmpty(item.Key) ? Url.Action("Index", "Dormitory") : Url.Action("Workspace", "Dormitory", new { section = item.Key });
                                 var isCurrent = active == item.Key && (item.Key.Length > 0 || currentAction == "Index");
                                 <li class="nav-item @(isCurrent ? "active" : "")">
-                                    <a class="nav-link py-2 @(isCurrent ? "fw-bold text-white bg-primary-lt" : "text-white-75")" href="@href">
+                                    <a class="nav-link py-2 @(isCurrent ? "active fw-bold text-white" : "text-white")" href="@href">
                                         <span class="nav-link-icon d-inline-block me-2">
                                             <i class="ti @GetTablerIcon(item.Key) fs-2"></i>
                                         </span>
@@ -238,31 +256,6 @@
                     @RenderBody()
                 </div>
             </div>
-
-            <!-- Tabler Modern Footer -->
-            <footer class="footer footer-transparent d-print-none py-3 border-top bg-white mt-auto">
-                <div class="container-xl">
-                    <div class="row text-center align-items-center flex-row-reverse">
-                        <div class="col-lg-auto ms-lg-auto">
-                            <ul class="list-inline list-inline-dots mb-0">
-                                <li class="list-inline-item"><span class="badge bg-green-lt text-green"><i class="ti ti-point-filled"></i> Máy chủ hoạt động tốt</span></li>
-                                <li class="list-inline-item"><a href="#" class="link-secondary">Hỗ trợ nội trú</a></li>
-                                <li class="list-inline-item"><a href="#" class="link-secondary">Quy định KTX</a></li>
-                            </ul>
-                        </div>
-                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
-                            <ul class="list-inline list-inline-dots mb-0 text-muted">
-                                <li class="list-inline-item">
-                                    © @DateTime.Now.Year <strong>Hệ thống Quản lý Ký túc xá</strong>. Bản quyền thuộc Ban Quản lý KTX Đại học.
-                                </li>
-                                <li class="list-inline-item">
-                                    Nền tảng Tabler Bootstrap 5
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </footer>
         </div>
     </div>
 }

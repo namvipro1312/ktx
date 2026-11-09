@@ -171,7 +171,7 @@ public partial class QlKtxContext : DbContext
             entity.Property(e => e.created_at)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
-            entity.Property(e => e.description).HasColumnType("text");
+            entity.Property(e => e.description).HasColumnType("nvarchar(max)");
             entity.Property(e => e.is_active).HasDefaultValue(true);
             entity.Property(e => e.name).HasMaxLength(150);
         });
@@ -200,7 +200,7 @@ public partial class QlKtxContext : DbContext
             entity.Property(e => e.status)
                 .HasMaxLength(30)
                 .HasDefaultValue("draft");
-            entity.Property(e => e.terms).HasColumnType("text");
+            entity.Property(e => e.terms).HasColumnType("nvarchar(max)");
 
             entity.HasOne(d => d.bed).WithMany(p => p.contracts)
                 .HasForeignKey(d => d.bed_id)
@@ -237,7 +237,7 @@ public partial class QlKtxContext : DbContext
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.document_path).HasMaxLength(500);
-            entity.Property(e => e.reason).HasColumnType("text");
+            entity.Property(e => e.reason).HasColumnType("nvarchar(max)");
             entity.Property(e => e.signed_at).HasPrecision(0);
 
             entity.HasOne(d => d.contract).WithMany(p => p.contract_amendments)
@@ -316,7 +316,7 @@ public partial class QlKtxContext : DbContext
 
             entity.HasIndex(e => new { e.title, e.version }, "uq_rules_title_version").IsUnique();
 
-            entity.Property(e => e.content).HasColumnType("text");
+            entity.Property(e => e.content).HasColumnType("nvarchar(max)");
             entity.Property(e => e.created_at)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
@@ -439,7 +439,7 @@ public partial class QlKtxContext : DbContext
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.entity_type).HasMaxLength(60);
-            entity.Property(e => e.message).HasColumnType("text");
+            entity.Property(e => e.message).HasColumnType("nvarchar(max)");
             entity.Property(e => e.notification_type)
                 .HasMaxLength(60)
                 .HasDefaultValue("general");
@@ -461,8 +461,8 @@ public partial class QlKtxContext : DbContext
 
             entity.Property(e => e.checked_in_at).HasPrecision(0);
             entity.Property(e => e.checked_out_at).HasPrecision(0);
-            entity.Property(e => e.checkin_note).HasColumnType("text");
-            entity.Property(e => e.checkout_note).HasColumnType("text");
+            entity.Property(e => e.checkin_note).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.checkout_note).HasColumnType("nvarchar(max)");
             entity.Property(e => e.created_at)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
@@ -627,7 +627,7 @@ public partial class QlKtxContext : DbContext
 
             entity.HasIndex(e => new { e.registration_id, e.reviewed_at }, "idx_registration_reviews_registration");
 
-            entity.Property(e => e.comment).HasColumnType("text");
+            entity.Property(e => e.comment).HasColumnType("nvarchar(max)");
             entity.Property(e => e.decision).HasMaxLength(30);
             entity.Property(e => e.reviewed_at)
                 .HasPrecision(0)
@@ -654,7 +654,7 @@ public partial class QlKtxContext : DbContext
             entity.HasIndex(e => e.request_code, "uq_repairs_code").IsUnique();
 
             entity.Property(e => e.completed_at).HasPrecision(0);
-            entity.Property(e => e.description).HasColumnType("text");
+            entity.Property(e => e.description).HasColumnType("nvarchar(max)");
             entity.Property(e => e.priority)
                 .HasMaxLength(30)
                 .HasDefaultValue("normal");
@@ -662,7 +662,7 @@ public partial class QlKtxContext : DbContext
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.request_code).HasMaxLength(40);
-            entity.Property(e => e.resolution_note).HasColumnType("text");
+            entity.Property(e => e.resolution_note).HasColumnType("nvarchar(max)");
             entity.Property(e => e.status)
                 .HasMaxLength(30)
                 .HasDefaultValue("submitted");
@@ -695,7 +695,7 @@ public partial class QlKtxContext : DbContext
 
             entity.HasIndex(e => new { e.repair_request_id, e.created_at }, "idx_repair_updates_request_date");
 
-            entity.Property(e => e.comment).HasColumnType("text");
+            entity.Property(e => e.comment).HasColumnType("nvarchar(max)");
             entity.Property(e => e.created_at)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
@@ -749,7 +749,7 @@ public partial class QlKtxContext : DbContext
             entity.Property(e => e.created_at)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
-            entity.Property(e => e.description).HasColumnType("text");
+            entity.Property(e => e.description).HasColumnType("nvarchar(max)");
             entity.Property(e => e.monthly_price).HasColumnType("decimal(12, 2)");
             entity.Property(e => e.room_number).HasMaxLength(30);
             entity.Property(e => e.room_type).HasMaxLength(80);
@@ -806,7 +806,7 @@ public partial class QlKtxContext : DbContext
 
             entity.HasIndex(e => e.registration_code, "uq_registrations_code").IsUnique();
 
-            entity.Property(e => e.note).HasColumnType("text");
+            entity.Property(e => e.note).HasColumnType("nvarchar(max)");
             entity.Property(e => e.preferred_room_type).HasMaxLength(80);
             entity.Property(e => e.registration_code).HasMaxLength(40);
             entity.Property(e => e.status)
@@ -851,7 +851,7 @@ public partial class QlKtxContext : DbContext
             entity.HasIndex(e => e.code, "uq_services_code").IsUnique();
 
             entity.Property(e => e.code).HasMaxLength(40);
-            entity.Property(e => e.description).HasColumnType("text");
+            entity.Property(e => e.description).HasColumnType("nvarchar(max)");
             entity.Property(e => e.is_active).HasDefaultValue(true);
             entity.Property(e => e.name).HasMaxLength(150);
             entity.Property(e => e.unit)
@@ -959,10 +959,10 @@ public partial class QlKtxContext : DbContext
             entity.Property(e => e.created_at)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
-            entity.Property(e => e.description).HasColumnType("text");
+            entity.Property(e => e.description).HasColumnType("nvarchar(max)");
             entity.Property(e => e.fine_amount).HasColumnType("decimal(12, 2)");
             entity.Property(e => e.occurred_at).HasPrecision(0);
-            entity.Property(e => e.resolution_note).HasColumnType("text");
+            entity.Property(e => e.resolution_note).HasColumnType("nvarchar(max)");
             entity.Property(e => e.resolved_at).HasPrecision(0);
             entity.Property(e => e.status)
                 .HasMaxLength(30)
