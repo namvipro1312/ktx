@@ -670,7 +670,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
         if (operation is ("acknowledge" or "subscribe" or "unsubscribe" or "payment-request" or "guest-cancel" or "student-sign" or "student-checkin") && !IsStudent) return Forbid();
         if (operation == "user-toggle" && !IsSystemAdmin) return Forbid();
         if (operation == "open-deposits") return RedirectToAction(nameof(Workspace), new { section = "deposits" });
-        if (IsStudent && operation is ("approve" or "reject" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "payment-confirm" or "deposit-confirm" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "guest-approve" or "guest-reject" or "guest-arrive" or "guest-depart" or "asset-check" or "meter-toggle" or "violation-review" or "violation-resolve" or "violation-invoice" or "refund-complete" or "refund-reject" or "auto-allocate-all")) return Forbid();
+        if (IsStudent && operation is ("approve" or "reject" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "room-close" or "payment-confirm" or "deposit-confirm" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "guest-approve" or "guest-reject" or "guest-arrive" or "guest-depart" or "asset-check" or "meter-toggle" or "violation-review" or "violation-resolve" or "violation-invoice" or "refund-complete" or "refund-reject" or "auto-allocate-all")) return Forbid();
         if (operation.StartsWith("guest-") && operation != "guest-cancel" && !IsAdmin) return Forbid();
         if (operation == "asset-check" && !(IsAdmin || IsMaintenance)) return Forbid();
         if (operation == "meter-toggle" && !IsAdmin) return Forbid();
@@ -679,7 +679,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
         if (operation == "notification-read" && IsStudent == false && !IsAdmin && !IsAccountant && !IsMaintenance) return Forbid();
         try
         {
-            if (operation is "approve" or "reject" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "auto-allocate-all")
+            if (operation is "approve" or "reject" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "room-close" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "auto-allocate-all")
             {
                 if (operation.StartsWith("repair-") ? !(IsAdmin || IsMaintenance) : !IsAdmin) return Forbid();
             }
@@ -921,6 +921,13 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     mRoom.status = "maintenance";
                     await db.SaveChangesAsync();
                     TempData["Notice"] = $"Đã chuyển phòng {mRoom.room_number} sang trạng thái bảo trì kỹ thuật (thao tác thủ công).";
+                    break;
+                case "room-close":
+                    // ĐÓNG PHÒNG THỦ CÔNG (TẠM DỪNG TIẾP NHẬN / ĐÃ ĐẦY)
+                    var cRoom = await db.rooms.SingleAsync(x => x.id == id);
+                    cRoom.status = "full";
+                    await db.SaveChangesAsync();
+                    TempData["Notice"] = $"Đã đóng phòng {cRoom.room_number} (tạm dừng tiếp nhận sinh viên).";
                     break;
                 case "room-open":
                     // MỞ PHÒNG PHẢI ẤN THỦ CÔNG

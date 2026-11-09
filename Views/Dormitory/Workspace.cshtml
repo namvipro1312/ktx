@@ -256,42 +256,71 @@
                                                 <div class="mt-auto pt-1 border-top border-secondary-subtle">
                                                     @if (isAdmin)
                                                     {
-                                                        <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0"
-                                                              onsubmit="return confirm('@(isMaintenance ? $"Xác nhận kết thúc bảo trì và mở lại phòng {room.RoomNumber}?" : $"Xác nhận đưa phòng {room.RoomNumber} vào trạng thái bảo trì kỹ thuật (thao tác thủ công)?")');">
-                                                            <input type="hidden" name="section" value="rooms" />
-                                                            <input type="hidden" name="id" value="@room.Id" />
-                                                            <input type="hidden" name="operation" value="@(isMaintenance ? "room-open" : "room-maintenance")" />
-                                                            @if (isMaintenance)
-                                                            {
-                                                                <button class="btn btn-success btn-sm w-100 py-1 fs-6 fw-semibold text-truncate" type="submit" title="Nhấn để hoàn tất sửa chữa và mở lại phòng (Thao tác thủ công)">
-                                                                    <i class="ti ti-check me-1"></i> Mở phòng (Thủ công)
+                                                        <!-- 1 hàng chia thành các ô: mỗi ô 1 icon Đóng, Mở, Bảo trì -->
+                                                        <div class="room-status-grid mt-2" role="group" aria-label="Thao tác trạng thái phòng">
+                                                            <!-- Ô 1: ĐÓNG -->
+                                                            <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0 flex-fill"
+                                                                  onsubmit="return confirm('Xác nhận đóng cửa phòng @room.RoomNumber (tạm ngưng tiếp nhận)?');">
+                                                                <input type="hidden" name="section" value="rooms" />
+                                                                <input type="hidden" name="id" value="@room.Id" />
+                                                                <input type="hidden" name="operation" value="room-close" />
+                                                                <button type="submit"
+                                                                        class="btn btn-sm w-100 room-status-btn @(isFull && !isMaintenance ? "btn-secondary text-white active shadow-sm" : "btn-outline-secondary")"
+                                                                        title="Đóng phòng (Tạm ngưng tiếp nhận / Kín chỗ)"
+                                                                        data-bs-toggle="tooltip">
+                                                                    <i class="ti ti-lock fs-3"></i>
                                                                 </button>
-                                                            }
-                                                            else
-                                                            {
-                                                                <button class="btn btn-outline-warning btn-sm w-100 py-1 fs-6 text-truncate" type="submit" title="Nhấn để đưa phòng vào bảo trì thủ công">
-                                                                    <i class="ti ti-tool me-1"></i> Đặt bảo trì (Thủ công)
+                                                            </form>
+
+                                                            <!-- Ô 2: MỞ -->
+                                                            <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0 flex-fill"
+                                                                  onsubmit="return confirm('Xác nhận mở phòng @room.RoomNumber để tiếp nhận sinh viên?');">
+                                                                <input type="hidden" name="section" value="rooms" />
+                                                                <input type="hidden" name="id" value="@room.Id" />
+                                                                <input type="hidden" name="operation" value="room-open" />
+                                                                <button type="submit"
+                                                                        class="btn btn-sm w-100 room-status-btn @(!isMaintenance && !isFull ? "btn-success text-white active shadow-sm" : "btn-outline-success")"
+                                                                        title="Mở phòng (Sẵn sàng tiếp nhận)"
+                                                                        data-bs-toggle="tooltip">
+                                                                    <i class="ti ti-door-enter fs-3"></i>
                                                                 </button>
-                                                            }
-                                                        </form>
+                                                            </form>
+
+                                                            <!-- Ô 3: BẢO TRÌ -->
+                                                            <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0 flex-fill"
+                                                                  onsubmit="return confirm('Xác nhận đưa phòng @room.RoomNumber vào trạng thái bảo trì kỹ thuật (thao tác thủ công)?');">
+                                                                <input type="hidden" name="section" value="rooms" />
+                                                                <input type="hidden" name="id" value="@room.Id" />
+                                                                <input type="hidden" name="operation" value="room-maintenance" />
+                                                                <button type="submit"
+                                                                        class="btn btn-sm w-100 room-status-btn @(isMaintenance ? "btn-warning text-white active shadow-sm" : "btn-outline-warning")"
+                                                                        title="Bảo trì kỹ thuật (Thao tác thủ công)"
+                                                                        data-bs-toggle="tooltip">
+                                                                    <i class="ti ti-tool fs-3"></i>
+                                                                </button>
+                                                            </form>
+                                                        </div>
                                                     }
                                                     else
                                                     {
-                                                        @if (isMaintenance)
+                                                        <!-- Hiển thị trực quan cho Sinh viên -->
+                                                        <div class="room-status-grid mt-2" role="group" aria-label="Tình trạng phòng">
+                                                            <div class="room-status-indicator @(isFull && !isMaintenance ? "status-active-closed" : "status-inactive")"
+                                                                 title="Đã kín chỗ / Tạm đóng">
+                                                                <i class="ti ti-lock fs-4"></i>
+                                                            </div>
+                                                            <div class="room-status-indicator @(!isMaintenance && !isFull ? "status-active-open" : "status-inactive")"
+                                                                 title="Đang mở / Còn chỗ">
+                                                                <i class="ti ti-door-enter fs-4"></i>
+                                                            </div>
+                                                            <div class="room-status-indicator @(isMaintenance ? "status-active-maint" : "status-inactive")"
+                                                                 title="Đang bảo trì">
+                                                                <i class="ti ti-tool fs-4"></i>
+                                                            </div>
+                                                        </div>
+                                                        @if (!isMaintenance && !isFull)
                                                         {
-                                                            <span class="badge bg-warning-lt text-warning w-100 py-1 fs-6 d-block text-center" title="Phòng đang trong diện bảo trì kỹ thuật">
-                                                                <i class="ti ti-tool me-1"></i> Đang bảo trì
-                                                            </span>
-                                                        }
-                                                        else if (isFull)
-                                                        {
-                                                            <span class="badge bg-secondary-lt text-secondary w-100 py-1 fs-6 d-block text-center" title="Phòng đã đủ số người lưu trú, hệ thống tự động đóng cửa">
-                                                                <i class="ti ti-lock me-1"></i> Đã đầy (Đóng cửa)
-                                                            </span>
-                                                        }
-                                                        else
-                                                        {
-                                                            <a href="/Dormitory/Workspace?section=registrations#create-form" class="btn btn-primary btn-sm w-100 py-1 fs-6 text-truncate" title="Đăng ký giữ chỗ phòng này">
+                                                            <a href="/Dormitory/Workspace?section=registrations#create-form" class="btn btn-primary btn-sm w-100 py-1 fs-6 mt-2 text-truncate" title="Đăng ký giữ chỗ phòng này">
                                                                 <i class="ti ti-pencil me-1"></i> Đăng ký phòng
                                                             </a>
                                                         }

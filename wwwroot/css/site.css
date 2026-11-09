@@ -150,3 +150,85 @@ body {
         box-shadow: none !important;
     }
 }
+
+/* ==========================================================================
+   ROOM STATUS ACTION GRID (ĐÓNG - MỞ - BẢO TRÌ)
+   ========================================================================== */
+.room-status-grid {
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    width: 100%;
+}
+
+.room-status-grid form {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.room-status-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    padding: 2px 4px !important;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.room-status-btn i {
+    font-size: 1.15rem;
+    line-height: 1;
+}
+
+.room-status-btn:hover {
+    transform: translateY(-1px);
+}
+
+.room-status-btn.active {
+    font-weight: 700;
+}
+
+/* Student Read-Only Status Indicators */
+.room-status-indicator {
+    flex: 1 1 0;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    border: 1px solid #e2e8f0;
+}
+
+.room-status-indicator.status-inactive {
+    background-color: #f8fafc;
+    color: #94a3b8;
+    opacity: 0.45;
+}
+
+.room-status-indicator.status-active-open {
+    background-color: #2fb344;
+    color: #ffffff;
+    border-color: #2fb344;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(47, 179, 68, 0.3);
+}
+
+.room-status-indicator.status-active-closed {
+    background-color: #64748b;
+    color: #ffffff;
+    border-color: #64748b;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(100, 116, 139, 0.3);
+}
+
+.room-status-indicator.status-active-maint {
+    background-color: #f76707;
+    color: #ffffff;
+    border-color: #f76707;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(247, 103, 7, 0.3);
+}
