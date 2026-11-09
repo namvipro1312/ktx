@@ -129,6 +129,26 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     .ThenBy(x => x.room_number)
                     .ToListAsync();
 
+                // TỰ ĐỘNG ĐÓNG PHÒNG ĐÃ ĐẦY; BẢO TRÌ PHẢI ẤN THỦ CÔNG
+                var hasStatusChanges = false;
+                foreach (var r in allRooms)
+                {
+                    if (r.status != "maintenance")
+                    {
+                        var currentAvailBeds = r.beds.Count(b => b.status == "available");
+                        var autoStatus = currentAvailBeds == 0 ? "full" : "available";
+                        if (r.status != autoStatus)
+                        {
+                            r.status = autoStatus;
+                            hasStatusChanges = true;
+                        }
+                    }
+                }
+                if (hasStatusChanges)
+                {
+                    await db.SaveChangesAsync();
+                }
+
                 var matrixGroups = allRooms
                     .GroupBy(x => x.building)
                     .OrderBy(g => g.Key.code)
@@ -705,6 +725,17 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     {
                         freeBed.status = "occupied";
                         registration.status = "contracted";
+
+                        // TỰ ĐỘNG ĐÓNG PHÒNG KHI ĐÃ ĐẦY (NẾU KHÔNG BẢO TRÌ)
+                        if (freeBed.room.status != "maintenance")
+                        {
+                            var remainingBeds = await db.beds.CountAsync(b => b.room_id == freeBed.room_id && b.status == "available" && b.id != freeBed.id);
+                            if (remainingBeds == 0)
+                            {
+                                freeBed.room.status = "full";
+                            }
+                        }
+
                         var newContract = new contract
                         {
                             contract_code = "HD-" + DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
@@ -779,6 +810,17 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
 
                         targetBed.status = "occupied";
                         reg.status = "contracted";
+
+                        // TỰ ĐỘNG ĐÓNG PHÒNG KHI ĐÃ ĐẦY
+                        if (targetBed.room.status != "maintenance")
+                        {
+                            var remainingBeds = await db.beds.CountAsync(b => b.room_id == targetBed.room_id && b.status == "available" && b.id != targetBed.id);
+                            if (remainingBeds == 0)
+                            {
+                                targetBed.room.status = "full";
+                            }
+                        }
+
                         var autoContract = new contract
                         {
                             contract_code = "HD-" + DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
@@ -863,16 +905,30 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     cancelledContract.bed.status = "available";
                     break;
                 case "checkout":
-                    var checkout = await db.contracts.Include(x => x.occupancy_record).Include(x => x.bed).SingleAsync(x => x.id == id && x.status == "active");
+                    var checkout = await db.contracts.Include(x => x.occupancy_record).Include(x => x.bed).ThenInclude(x => x.room).SingleAsync(x => x.id == id && x.status == "active");
                     if (checkout.occupancy_record is not null) { checkout.occupancy_record.checked_out_at = DateTime.Now; checkout.occupancy_record.checked_out_by_user_id = UserId; checkout.occupancy_record.checkout_condition = "Đã ghi nhận khi trả phòng"; }
                     checkout.status = "expired";
                     checkout.bed.status = "available";
+                    // TỰ ĐỘNG MỞ PHÒNG NẾU TRƯỚC ĐÓ ĐẦY (KHÔNG TỰ MỞ NẾU ĐANG BẢO TRÌ THỦ CÔNG)
+                    if (checkout.bed.room.status == "full")
+                    {
+                        checkout.bed.room.status = "available";
+                    }
                     break;
                 case "room-maintenance":
-                    (await db.rooms.SingleAsync(x => x.id == id)).status = "maintenance";
+                    // BẢO TRÌ PHẢI ẤN THỦ CÔNG
+                    var mRoom = await db.rooms.SingleAsync(x => x.id == id);
+                    mRoom.status = "maintenance";
+                    await db.SaveChangesAsync();
+                    TempData["Notice"] = $"Đã chuyển phòng {mRoom.room_number} sang trạng thái bảo trì kỹ thuật (thao tác thủ công).";
                     break;
                 case "room-open":
-                    (await db.rooms.SingleAsync(x => x.id == id)).status = "available";
+                    // MỞ PHÒNG PHẢI ẤN THỦ CÔNG
+                    var oRoom = await db.rooms.Include(x => x.beds).SingleAsync(x => x.id == id);
+                    var availBedsCount = oRoom.beds.Count(b => b.status == "available");
+                    oRoom.status = availBedsCount == 0 ? "full" : "available";
+                    await db.SaveChangesAsync();
+                    TempData["Notice"] = $"Đã mở lại phòng {oRoom.room_number} (thao tác thủ công). Trạng thái hiện tại: {(availBedsCount == 0 ? "Đã đầy" : "Còn chỗ")}.";
                     break;
                 case "repair-accept": case "repair-progress": case "repair-complete": case "repair-reject":
                     var repair = await db.repair_requests.Include(x => x.student).SingleAsync(x => x.id == id);

@@ -127,9 +127,15 @@
 
                 <!-- Legend Indicator -->
                 <div class="col-12 col-lg-auto text-lg-end d-none d-md-block">
-                    <span class="badge bg-success-lt text-success me-1"><i class="ti ti-point-filled"></i> Còn chỗ</span>
-                    <span class="badge bg-secondary-lt text-secondary me-1"><i class="ti ti-point-filled"></i> Kín chỗ</span>
-                    <span class="badge bg-warning-lt text-warning"><i class="ti ti-point-filled"></i> Bảo trì</span>
+                    <span class="badge bg-success-lt text-success me-1" title="Phòng còn giường trống sẽ tự động mở để sinh viên đăng ký">
+                        <i class="ti ti-point-filled"></i> Còn chỗ (Tự động mở)
+                    </span>
+                    <span class="badge bg-secondary-lt text-secondary me-1" title="Phòng đã đủ số người sẽ tự động đóng cửa">
+                        <i class="ti ti-lock me-1"></i> Đã đầy (Tự động đóng)
+                    </span>
+                    <span class="badge bg-warning-lt text-warning" title="Phòng cần bảo dưỡng do Ban quản lý ấn nút thủ công">
+                        <i class="ti ti-tool me-1"></i> Bảo trì (Ấn thủ công)
+                    </span>
                 </div>
             </div>
         </div>
@@ -191,10 +197,9 @@
                                 @foreach (var room in floor.Rooms)
                                 {
                                     var isMaintenance = room.Status == "maintenance";
-                                    var isFull = room.AvailableBeds == 0;
+                                    var isFull = room.AvailableBeds == 0 || room.Status == "full";
                                     var statusKey = isMaintenance ? "maint" : isFull ? "full" : "avail";
-                                    var borderClass = isMaintenance ? "border-warning bg-warning-lt" : isFull ? "border-secondary-subtle bg-light" : "border-success-subtle bg-white";
-                                    var pillClass = isMaintenance ? "bg-warning text-white" : isFull ? "bg-secondary text-white" : "bg-success text-white";
+                                    var borderClass = isMaintenance ? "border-warning bg-warning-lt" : isFull ? "border-secondary-subtle bg-light opacity-90" : "border-success-subtle bg-white";
 
                                     <div class="col-6 col-sm-4 col-md-3 col-lg-2 room-card-col" 
                                          data-room-item 
@@ -207,9 +212,24 @@
                                                 <!-- Room Header -->
                                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                                     <strong class="fs-4 text-dark">@room.RoomNumber</strong>
-                                                    <span class="badge @pillClass px-1 py-0 fs-6">
-                                                        @(isMaintenance ? "Bảo trì" : isFull ? "Kín chỗ" : $"{room.AvailableBeds}/{room.Capacity} trống")
-                                                    </span>
+                                                    @if (isMaintenance)
+                                                    {
+                                                        <span class="badge bg-warning text-white px-2 py-0 fs-6" title="Phòng đang trong trạng thái bảo trì kỹ thuật (Admin điều phối thủ công)">
+                                                            <i class="ti ti-tool me-1"></i>Bảo trì
+                                                        </span>
+                                                    }
+                                                    else if (isFull)
+                                                    {
+                                                        <span class="badge bg-secondary text-white px-2 py-0 fs-6" title="Phòng đã đủ @room.Capacity/@room.Capacity người - Hệ thống tự động đóng cửa">
+                                                            <i class="ti ti-lock me-1"></i>Đã đầy (Đóng)
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-success text-white px-2 py-0 fs-6" title="Phòng đang mở - Còn @room.AvailableBeds chỗ trống sẵn sàng đón sinh viên">
+                                                            <i class="ti ti-door-enter me-1"></i>@room.AvailableBeds/@room.Capacity trống
+                                                        </span>
+                                                    }
                                                 </div>
 
                                                 <!-- Room Type & Price -->
@@ -236,28 +256,44 @@
                                                 <div class="mt-auto pt-1 border-top border-secondary-subtle">
                                                     @if (isAdmin)
                                                     {
-                                                        <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
+                                                        <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0"
+                                                              onsubmit="return confirm('@(isMaintenance ? $"Xác nhận kết thúc bảo trì và mở lại phòng {room.RoomNumber}?" : $"Xác nhận đưa phòng {room.RoomNumber} vào trạng thái bảo trì kỹ thuật (thao tác thủ công)?")');">
                                                             <input type="hidden" name="section" value="rooms" />
                                                             <input type="hidden" name="id" value="@room.Id" />
                                                             <input type="hidden" name="operation" value="@(isMaintenance ? "room-open" : "room-maintenance")" />
-                                                            <button class="btn btn-ghost-secondary btn-sm w-100 py-0 fs-6 text-truncate" type="submit" title="@(isMaintenance ? "Mở lại phòng cho sinh viên đăng ký" : "Chuyển sang trạng thái bảo trì/sửa chữa")">
-                                                                @(isMaintenance ? "✓ Mở phòng" : "⚙ Bảo trì")
-                                                            </button>
+                                                            @if (isMaintenance)
+                                                            {
+                                                                <button class="btn btn-success btn-sm w-100 py-1 fs-6 fw-semibold text-truncate" type="submit" title="Nhấn để hoàn tất sửa chữa và mở lại phòng (Thao tác thủ công)">
+                                                                    <i class="ti ti-check me-1"></i> Mở phòng (Thủ công)
+                                                                </button>
+                                                            }
+                                                            else
+                                                            {
+                                                                <button class="btn btn-outline-warning btn-sm w-100 py-1 fs-6 text-truncate" type="submit" title="Nhấn để đưa phòng vào bảo trì thủ công">
+                                                                    <i class="ti ti-tool me-1"></i> Đặt bảo trì (Thủ công)
+                                                                </button>
+                                                            }
                                                         </form>
                                                     }
                                                     else
                                                     {
-                                                        @if (!isMaintenance && !isFull)
+                                                        @if (isMaintenance)
                                                         {
-                                                            <a href="/Dormitory/Workspace?section=registrations#create-form" class="btn btn-outline-primary btn-sm w-100 py-0 fs-6 text-truncate" title="Đăng ký ở tại phòng này">
-                                                                <i class="ti ti-pencil me-1"></i> Đăng ký
-                                                            </a>
+                                                            <span class="badge bg-warning-lt text-warning w-100 py-1 fs-6 d-block text-center" title="Phòng đang trong diện bảo trì kỹ thuật">
+                                                                <i class="ti ti-tool me-1"></i> Đang bảo trì
+                                                            </span>
+                                                        }
+                                                        else if (isFull)
+                                                        {
+                                                            <span class="badge bg-secondary-lt text-secondary w-100 py-1 fs-6 d-block text-center" title="Phòng đã đủ số người lưu trú, hệ thống tự động đóng cửa">
+                                                                <i class="ti ti-lock me-1"></i> Đã đầy (Đóng cửa)
+                                                            </span>
                                                         }
                                                         else
                                                         {
-                                                            <span class="text-muted fs-6 d-block text-center py-0">
-                                                                @(isMaintenance ? "Đang sửa chữa" : "Hết giường")
-                                                            </span>
+                                                            <a href="/Dormitory/Workspace?section=registrations#create-form" class="btn btn-primary btn-sm w-100 py-1 fs-6 text-truncate" title="Đăng ký giữ chỗ phòng này">
+                                                                <i class="ti ti-pencil me-1"></i> Đăng ký phòng
+                                                            </a>
                                                         }
                                                     }
                                                 </div>
