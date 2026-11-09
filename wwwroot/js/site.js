@@ -1,4 +1,4 @@
-﻿// Tabler Dashboard interactions for QLKTX
+// Tabler Dashboard interactions for QLKTX
 
 document.addEventListener("DOMContentLoaded", function () {
     const searchInputs = document.querySelectorAll("[data-table-search]");

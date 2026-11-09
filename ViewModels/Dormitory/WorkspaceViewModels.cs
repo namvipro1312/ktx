@@ -30,15 +30,15 @@ public sealed class DashboardTaskViewModel(string title, string detail, string s
 
 public sealed class ModuleViewModel
 {
-    public string Section { get; init; } = "";
-    public string Title { get; init; } = "";
-    public string Description { get; init; } = "";
-    public string CountLabel { get; init; } = "";
-    public List<string> Columns { get; init; } = [];
-    public List<ModuleRowViewModel> Rows { get; init; } = [];
-    public List<FormFieldViewModel> Fields { get; init; } = [];
-    public string? FormTitle { get; init; }
-    public string? FormHelp { get; init; }
+    public string Section { get; set; } = "";
+    public string Title { get; set; } = "";
+    public string Description { get; set; } = "";
+    public string CountLabel { get; set; } = "";
+    public List<string> Columns { get; set; } = [];
+    public List<ModuleRowViewModel> Rows { get; set; } = [];
+    public List<FormFieldViewModel> Fields { get; set; } = [];
+    public string? FormTitle { get; set; }
+    public string? FormHelp { get; set; }
     public List<RoomMatrixGroupViewModel> RoomGroups { get; set; } = [];
     public RegistrationStatsViewModel? RegistrationStats { get; set; }
     public List<RegistrationItemViewModel> Registrations { get; set; } = [];

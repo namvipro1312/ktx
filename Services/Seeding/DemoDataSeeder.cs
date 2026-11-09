@@ -67,6 +67,100 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
             db.utility_meters.Add(new utility_meter { room_id = demoRoom.id, service_id = electricity.id, meter_code = "DEMO-" + demoRoom.room_number + "-E", installed_at = DateOnly.FromDateTime(DateTime.Today.AddMonths(-2)), is_active = true, note = "Đồng hồ minh họa; thay mã khi vận hành thật." });
             await db.SaveChangesAsync();
         }
+
+        await EnsureComprehensiveRoomsAsync();
+    }
+
+    private async Task EnsureComprehensiveRoomsAsync()
+    {
+        var bldgA = await db.buildings.FirstOrDefaultAsync(b => b.code == "A");
+        var bldgB = await db.buildings.FirstOrDefaultAsync(b => b.code == "B");
+        if (bldgA is null || bldgB is null) return;
+
+        var roomDefinitions = new (string bldgCode, string roomNum, int floor, string type, int cap, decimal price, string status, int occupiedCount)[]
+        {
+            // TÒA A - KHU NAM (Tầng 1 -> Tầng 4)
+            ("A", "A-101", 1, "4 người", 4, 650000, "available", 0),
+            ("A", "A-102", 1, "4 người", 4, 650000, "available", 2),
+            ("A", "A-103", 1, "6 người", 6, 520000, "available", 6), // Kín chỗ
+            ("A", "A-104", 1, "6 người", 6, 520000, "maintenance", 0), // Bảo trì
+            ("A", "A-201", 2, "4 người", 4, 650000, "available", 1),
+            ("A", "A-202", 2, "4 người", 4, 650000, "available", 0),
+            ("A", "A-203", 2, "4 người", 4, 650000, "available", 1),
+            ("A", "A-204", 2, "6 người", 6, 520000, "available", 0),
+            ("A", "A-301", 3, "4 người", 4, 650000, "available", 0),
+            ("A", "A-302", 3, "6 người", 6, 520000, "available", 3),
+            ("A", "A-303", 3, "6 người", 6, 520000, "available", 6), // Kín chỗ
+            ("A", "A-304", 3, "8 người", 8, 420000, "available", 0),
+            ("A", "A-401", 4, "4 người", 4, 650000, "available", 0),
+            ("A", "A-402", 4, "6 người", 6, 520000, "available", 2),
+            ("A", "A-403", 4, "8 người", 8, 420000, "available", 4),
+            ("A", "A-404", 4, "8 người", 8, 420000, "available", 8), // Kín chỗ
+
+            // TÒA B - KHU NỮ (Tầng 1 -> Tầng 4)
+            ("B", "B-101", 1, "4 người", 4, 700000, "available", 0),
+            ("B", "B-102", 1, "4 người", 4, 700000, "available", 1),
+            ("B", "B-103", 1, "4 người", 4, 700000, "available", 4), // Kín chỗ
+            ("B", "B-104", 1, "6 người", 6, 550000, "available", 0),
+            ("B", "B-105", 1, "4 người", 4, 700000, "available", 0),
+            ("B", "B-201", 2, "4 người", 4, 700000, "available", 0),
+            ("B", "B-202", 2, "4 người", 4, 700000, "available", 2),
+            ("B", "B-203", 2, "6 người", 6, 550000, "available", 0),
+            ("B", "B-204", 2, "6 người", 6, 550000, "maintenance", 0), // Bảo trì
+            ("B", "B-301", 3, "4 người", 4, 700000, "available", 0),
+            ("B", "B-302", 3, "6 người", 6, 550000, "available", 2),
+            ("B", "B-303", 3, "8 người", 8, 450000, "available", 8), // Kín chỗ
+            ("B", "B-304", 3, "8 người", 8, 450000, "available", 0),
+            ("B", "B-401", 4, "6 người", 6, 550000, "available", 0),
+            ("B", "B-402", 4, "6 người", 6, 550000, "available", 3),
+            ("B", "B-403", 4, "8 người", 8, 450000, "available", 0),
+            ("B", "B-404", 4, "8 người", 8, 450000, "available", 4)
+        };
+
+        foreach (var def in roomDefinitions)
+        {
+            var bldg = def.bldgCode == "A" ? bldgA : bldgB;
+            var r = await db.rooms.Include(x => x.beds).FirstOrDefaultAsync(x => x.building_id == bldg.id && x.room_number == def.roomNum);
+            if (r is null)
+            {
+                r = new room
+                {
+                    building_id = bldg.id,
+                    room_number = def.roomNum,
+                    floor_number = (short)def.floor,
+                    room_type = def.type,
+                    capacity = (short)def.cap,
+                    monthly_price = def.price,
+                    status = def.status,
+                    description = $"Phòng {def.roomNum} - {def.type}",
+                    created_at = DateTime.Now,
+                    updated_at = DateTime.Now
+                };
+                db.rooms.Add(r);
+                await db.SaveChangesAsync();
+            }
+
+            for (var i = 1; i <= r.capacity; i++)
+            {
+                var bedNum = $"G{i:02}";
+                var bed = r.beds.FirstOrDefault(b => b.bed_number == bedNum);
+                var isOccupied = i <= def.occupiedCount;
+                if (bed is null)
+                {
+                    db.beds.Add(new bed
+                    {
+                        room_id = r.id,
+                        bed_number = bedNum,
+                        status = isOccupied ? "occupied" : "available"
+                    });
+                }
+                else if (isOccupied && bed.status == "available")
+                {
+                    bed.status = "occupied";
+                }
+            }
+            await db.SaveChangesAsync();
+        }
     }
 
     private async Task<user> EnsureUser(string username, string email, string name, string password, string roleCode)

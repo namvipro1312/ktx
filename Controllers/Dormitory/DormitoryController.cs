@@ -161,6 +161,26 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                             }).ToList()
                     }).ToList();
 
+                model.Title = "Sơ đồ Phòng & Giường";
+                model.Description = IsStudent 
+                    ? "Tra cứu tình trạng phòng, số giường còn trống và mức giá để lựa chọn đăng ký lưu trú."
+                    : "Sơ đồ mặt bằng, quản lý hiện trạng công suất phòng, theo dõi phân bổ giường và điều phối bảo trì.";
+                model.CountLabel = $"{allRooms.Count} phòng · {allRooms.Sum(r => r.beds.Count(b => b.status == "available"))}/{allRooms.Sum(r => r.capacity)} chỗ trống";
+
+                if (IsAdmin)
+                {
+                    model.FormTitle = "Thêm phòng mới";
+                    model.FormHelp = "Thiết lập mã phòng, tòa nhà, tầng, loại phòng, sức chứa và đơn giá tháng.";
+                    model.Fields = [
+                        new("buildingId", "Tòa nhà", "select", true, await db.buildings.Where(x => x.is_active).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync()),
+                        new("roomNumber", "Mã phòng (VD: A-101, B-201)"),
+                        new("floor", "Tầng", "number", true),
+                        new("roomType", "Loại phòng (VD: 4 người, 6 người, 8 người)"),
+                        new("capacity", "Sức chứa (số giường)", "number", true),
+                        new("price", "Giá tháng (₫)", "number", true)
+                    ];
+                }
+
                 // If matrix data exists, use it and skip the flat‑table build.
                 if (matrixGroups.Any())
                 {

@@ -34,121 +34,323 @@
 <!-- ========================================== -->
 @if (Model.Section == "rooms" && Model.RoomGroups.Count > 0)
 {
-    <!-- Room Matrix Header & Filter Bar -->
-    <div class="card shadow-sm border-0 mb-3">
-        <div class="card-body py-2">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div>
-                    <h3 class="card-title mb-0 fw-bold">
-                        <i class="ti ti-layout-grid text-primary me-1"></i> Sơ đồ phòng trực quan (Matrix Floorplan)
-                    </h3>
-                    <small class="text-muted">Theo dõi tình trạng phòng và chỗ trống theo từng tòa nhà và tầng.</small>
+    var grandTotalRooms = Model.RoomGroups.Sum(b => b.Floors.Sum(f => f.Rooms.Count));
+    var grandTotalBeds = Model.RoomGroups.Sum(b => b.Floors.Sum(f => f.Rooms.Sum(r => r.Capacity)));
+    var grandAvailBeds = Model.RoomGroups.Sum(b => b.Floors.Sum(f => f.Rooms.Sum(r => r.AvailableBeds)));
+    var grandOccBeds = grandTotalBeds - grandAvailBeds;
+    var occPercent = grandTotalBeds > 0 ? (int)Math.Round((double)grandOccBeds * 100 / grandTotalBeds) : 0;
+
+    <!-- KPI Summary Ribbon -->
+    <div class="row row-cards g-2 mb-3">
+        <div class="col-6 col-md-3">
+            <div class="card card-sm shadow-sm border-0 border-start border-3 border-primary">
+                <div class="card-body p-2 px-3">
+                    <div class="text-muted fs-6">Tổng số phòng KTX</div>
+                    <div class="h3 mb-0 fw-bold text-dark">@grandTotalRooms <small class="text-muted font-weight-normal fs-6">phòng</small></div>
                 </div>
-                <!-- Legend -->
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <span class="badge bg-success-lt text-success"><i class="ti ti-point-filled"></i> Còn chỗ trống</span>
-                    <span class="badge bg-secondary-lt text-secondary"><i class="ti ti-point-filled"></i> Đã kín chỗ</span>
-                    <span class="badge bg-warning-lt text-warning"><i class="ti ti-point-filled"></i> Đang bảo trì</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-sm shadow-sm border-0 border-start border-3 border-success">
+                <div class="card-body p-2 px-3">
+                    <div class="text-muted fs-6">Giường còn trống</div>
+                    <div class="h3 mb-0 fw-bold text-success">@grandAvailBeds <small class="text-muted font-weight-normal fs-6">chỗ sẵn sàng</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-sm shadow-sm border-0 border-start border-3 border-info">
+                <div class="card-body p-2 px-3">
+                    <div class="text-muted fs-6">Sinh viên đang ở</div>
+                    <div class="h3 mb-0 fw-bold text-info">@grandOccBeds <small class="text-muted font-weight-normal fs-6">/@grandTotalBeds chỗ</small></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card card-sm shadow-sm border-0 border-start border-3 border-warning">
+                <div class="card-body p-2 px-3">
+                    <div class="text-muted fs-6">Tỷ lệ lấp đầy KTX</div>
+                    <div class="h3 mb-0 fw-bold text-warning">@occPercent% <small class="text-muted font-weight-normal fs-6">công suất</small></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Buildings Loop -->
-    @foreach (var building in Model.RoomGroups)
-    {
-        <div class="card shadow-sm border-0 mb-3">
-            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <span class="badge bg-primary text-white me-2 fw-bold">TÒA @building.BuildingCode</span>
-                    <h3 class="card-title fw-bold mb-0 text-dark">@building.BuildingName</h3>
-                </div>
-                <div class="text-muted fs-6">
-                    @{
-                        var totalRooms = building.Floors.Sum(f => f.Rooms.Count);
-                        var totalAvail = building.Floors.Sum(f => f.Rooms.Sum(r => r.AvailableBeds));
-                        var totalCap = building.Floors.Sum(f => f.Rooms.Sum(r => r.Capacity));
-                    }
-                    <span>@totalRooms phòng</span> · <span class="text-success fw-semibold">@totalAvail/@totalCap chỗ trống</span>
-                </div>
-            </div>
-
-            <div class="card-body p-3">
-                @foreach (var floor in building.Floors)
-                {
-                    <div class="floor-block mb-3">
-                        <!-- Floor Divider -->
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="badge bg-dark text-white px-2 py-1 fs-6 me-2">
-                                <i class="ti ti-stairs me-1"></i> TẦNG @floor.FloorNumber
-                            </span>
-                            <div class="border-bottom flex-fill"></div>
-                        </div>
-
-                        <!-- Compact Room Grid (High Density) -->
-                        <div class="row row-cards g-2">
-                            @foreach (var room in floor.Rooms)
-                            {
-                                var isMaintenance = room.Status == "maintenance";
-                                var isFull = room.AvailableBeds == 0;
-                                var borderClass = isMaintenance ? "border-warning bg-warning-lt" : isFull ? "border-secondary-subtle bg-light" : "border-success-subtle bg-white";
-                                var pillClass = isMaintenance ? "bg-warning text-white" : isFull ? "bg-secondary text-white" : "bg-success text-white";
-
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                    <div class="card card-sm shadow-none border @borderClass h-100">
-                                        <div class="card-body p-2 d-flex flex-column justify-content-between">
-                                            <!-- Room Top -->
-                                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                                <strong class="fs-4 text-dark">@room.RoomNumber</strong>
-                                                <span class="badge @pillClass px-1 py-0 fs-6">
-                                                    @(isMaintenance ? "Bảo trì" : isFull ? "Kín" : $"{room.AvailableBeds}/{room.Capacity} trống")
-                                                </span>
-                                            </div>
-
-                                            <!-- Room Meta -->
-                                            <div class="text-muted fs-6 mb-1 text-truncate" title="@room.RoomType">
-                                                <span>@room.RoomType</span>
-                                            </div>
-                                            <div class="text-primary fw-semibold fs-6 mb-2">
-                                                @room.MonthlyPrice.ToString("N0") đ
-                                            </div>
-
-                                            <!-- Bed Chips / Dots -->
-                                            <div class="d-flex flex-wrap gap-1 mb-2">
-                                                @foreach (var bed in room.Beds)
-                                                {
-                                                    var isBedAvail = bed.Status == "available";
-                                                    <span class="badge @(isBedAvail ? "bg-success text-white" : "bg-light text-muted border") px-1 py-0 fs-6"
-                                                          title="Giường @bed.BedNumber: @(isBedAvail ? "Còn trống" : "Đã có sinh viên ở")">
-                                                        <i class="ti ti-bed fs-6"></i> @bed.BedNumber
-                                                    </span>
-                                                }
-                                            </div>
-
-                                            <!-- Admin Toggle Button -->
-                                            @if (isAdmin)
-                                            {
-                                                <div class="mt-auto pt-1 border-top border-secondary-subtle">
-                                                    <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
-                                                        <input type="hidden" name="section" value="rooms" />
-                                                        <input type="hidden" name="id" value="@room.Id" />
-                                                        <input type="hidden" name="operation" value="@(isMaintenance ? "room-open" : "room-maintenance")" />
-                                                        <button class="btn btn-ghost-secondary btn-sm w-100 py-0 fs-6 text-truncate" type="submit">
-                                                            @(isMaintenance ? "✓ Mở phòng" : "⚙ Bảo trì")
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
+    <!-- Room Matrix Interactive Filter Toolbar -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body p-3">
+            <div class="row g-2 align-items-center">
+                <!-- Building Tabs Filter -->
+                <div class="col-12 col-lg-auto">
+                    <div class="btn-group btn-group-sm w-100" role="group" id="bldgFilterGroup">
+                        <button type="button" class="btn btn-outline-primary active" data-bldg-filter="all">
+                            <i class="ti ti-building me-1"></i> Tất cả tòa (@grandTotalRooms)
+                        </button>
+                        @foreach (var building in Model.RoomGroups)
+                        {
+                            var bldgCount = building.Floors.Sum(f => f.Rooms.Count);
+                            <button type="button" class="btn btn-outline-primary" data-bldg-filter="@building.BuildingCode">
+                                Tòa @building.BuildingCode (@bldgCount)
+                            </button>
+                        }
                     </div>
-                }
+                </div>
+
+                <!-- Floor Dropdown Filter -->
+                <div class="col-6 col-sm-4 col-lg-auto">
+                    <select class="form-select form-select-sm" id="floorFilterSelect">
+                        <option value="all">-- Tất cả các tầng --</option>
+                        <option value="1">Tầng 1</option>
+                        <option value="2">Tầng 2</option>
+                        <option value="3">Tầng 3</option>
+                        <option value="4">Tầng 4</option>
+                    </select>
+                </div>
+
+                <!-- Status Dropdown Filter -->
+                <div class="col-6 col-sm-4 col-lg-auto">
+                    <select class="form-select form-select-sm" id="statusFilterSelect">
+                        <option value="all">-- Tất cả trạng thái --</option>
+                        <option value="avail">🟢 Còn chỗ trống</option>
+                        <option value="full">⚫ Đã kín chỗ</option>
+                        <option value="maint">🟠 Đang bảo trì</option>
+                    </select>
+                </div>
+
+                <!-- Instant Search Input -->
+                <div class="col-12 col-sm-4 col-lg">
+                    <div class="input-icon">
+                        <span class="input-icon-addon"><i class="ti ti-search fs-3"></i></span>
+                        <input type="search" class="form-control form-control-sm" id="roomSearchInput" placeholder="Tìm số phòng (VD: 101, A-203, B-301)..." autocomplete="off" />
+                    </div>
+                </div>
+
+                <!-- Legend Indicator -->
+                <div class="col-12 col-lg-auto text-lg-end d-none d-md-block">
+                    <span class="badge bg-success-lt text-success me-1"><i class="ti ti-point-filled"></i> Còn chỗ</span>
+                    <span class="badge bg-secondary-lt text-secondary me-1"><i class="ti ti-point-filled"></i> Kín chỗ</span>
+                    <span class="badge bg-warning-lt text-warning"><i class="ti ti-point-filled"></i> Bảo trì</span>
+                </div>
             </div>
         </div>
-    }
+    </div>
+
+    <!-- Empty State when filter matches nothing -->
+    <div id="roomFilterEmptyState" class="card shadow-sm border-0 text-center py-5 mb-3" style="display:none;">
+        <div class="card-body">
+            <i class="ti ti-search-off fs-1 text-muted d-block mb-2"></i>
+            <h4 class="fw-bold text-dark">Không tìm thấy phòng nào phù hợp</h4>
+            <p class="text-muted mb-3">Vui lòng thử chọn tòa nhà, tầng hoặc điều kiện lọc trạng thái khác.</p>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="resetRoomFilters()">
+                <i class="ti ti-refresh me-1"></i> Đặt lại bộ lọc
+            </button>
+        </div>
+    </div>
+
+    <!-- Buildings Container -->
+    <div id="roomsContainer">
+        @foreach (var building in Model.RoomGroups)
+        {
+            var isBuildingA = building.BuildingCode == "A";
+            var buildingSubtitle = isBuildingA ? "Khu Nam · Phòng dành cho Nam sinh viên" : "Khu Nữ · Phòng dành cho Nữ sinh viên";
+            var bldgTotalRooms = building.Floors.Sum(f => f.Rooms.Count);
+            var bldgAvail = building.Floors.Sum(f => f.Rooms.Sum(r => r.AvailableBeds));
+            var bldgCap = building.Floors.Sum(f => f.Rooms.Sum(r => r.Capacity));
+
+            <div class="card shadow-sm border-0 mb-4 building-block" data-bldg-code="@building.BuildingCode">
+                <div class="card-header bg-white py-2 d-flex flex-wrap justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <span class="badge @(isBuildingA ? "bg-primary" : "bg-teal") text-white me-2 fs-5 fw-bold px-2 py-1">
+                            TÒA @building.BuildingCode
+                        </span>
+                        <div>
+                            <h3 class="card-title fw-bold mb-0 text-dark">@building.BuildingName</h3>
+                            <small class="text-muted">@buildingSubtitle</small>
+                        </div>
+                    </div>
+                    <div class="text-muted fs-6">
+                        <span class="fw-semibold text-dark">@bldgTotalRooms phòng</span> · 
+                        <span class="text-success fw-bold">@bldgAvail/@bldgCap giường trống</span>
+                    </div>
+                </div>
+
+                <div class="card-body p-3">
+                    @foreach (var floor in building.Floors)
+                    {
+                        <div class="floor-block mb-3" data-floor-number="@floor.FloorNumber">
+                            <!-- Floor Divider -->
+                            <div class="d-flex align-items-center mb-2">
+                                <span class="badge bg-dark text-white px-2 py-1 fs-6 me-2">
+                                    <i class="ti ti-stairs me-1"></i> TẦNG @floor.FloorNumber
+                                </span>
+                                <div class="border-bottom flex-fill"></div>
+                            </div>
+
+                            <!-- Compact High-Density Grid -->
+                            <div class="row row-cards g-2">
+                                @foreach (var room in floor.Rooms)
+                                {
+                                    var isMaintenance = room.Status == "maintenance";
+                                    var isFull = room.AvailableBeds == 0;
+                                    var statusKey = isMaintenance ? "maint" : isFull ? "full" : "avail";
+                                    var borderClass = isMaintenance ? "border-warning bg-warning-lt" : isFull ? "border-secondary-subtle bg-light" : "border-success-subtle bg-white";
+                                    var pillClass = isMaintenance ? "bg-warning text-white" : isFull ? "bg-secondary text-white" : "bg-success text-white";
+
+                                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 room-card-col" 
+                                         data-room-item 
+                                         data-bldg="@building.BuildingCode" 
+                                         data-floor="@floor.FloorNumber" 
+                                         data-status="@statusKey" 
+                                         data-room-num="@room.RoomNumber.ToLowerInvariant()">
+                                        <div class="card card-sm shadow-none border @borderClass h-100">
+                                            <div class="card-body p-2 d-flex flex-column justify-content-between">
+                                                <!-- Room Header -->
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <strong class="fs-4 text-dark">@room.RoomNumber</strong>
+                                                    <span class="badge @pillClass px-1 py-0 fs-6">
+                                                        @(isMaintenance ? "Bảo trì" : isFull ? "Kín chỗ" : $"{room.AvailableBeds}/{room.Capacity} trống")
+                                                    </span>
+                                                </div>
+
+                                                <!-- Room Type & Price -->
+                                                <div class="text-muted fs-6 mb-1 text-truncate" title="@room.RoomType">
+                                                    <i class="ti ti-users me-1 fs-6"></i> @room.RoomType
+                                                </div>
+                                                <div class="text-primary fw-semibold fs-6 mb-2">
+                                                    @room.MonthlyPrice.ToString("N0") đ<small class="text-muted font-weight-normal">/tháng</small>
+                                                </div>
+
+                                                <!-- Bed Chips -->
+                                                <div class="d-flex flex-wrap gap-1 mb-2">
+                                                    @foreach (var bed in room.Beds)
+                                                    {
+                                                        var isBedAvail = bed.Status == "available";
+                                                        <span class="badge @(isBedAvail ? "bg-success text-white" : "bg-light text-muted border") px-1 py-0 fs-6"
+                                                              title="Giường @bed.BedNumber: @(isBedAvail ? "Còn trống" : "Đã có người ở")">
+                                                            <i class="ti ti-bed fs-6"></i> @bed.BedNumber
+                                                        </span>
+                                                    }
+                                                </div>
+
+                                                <!-- Role-Specific Action -->
+                                                <div class="mt-auto pt-1 border-top border-secondary-subtle">
+                                                    @if (isAdmin)
+                                                    {
+                                                        <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
+                                                            <input type="hidden" name="section" value="rooms" />
+                                                            <input type="hidden" name="id" value="@room.Id" />
+                                                            <input type="hidden" name="operation" value="@(isMaintenance ? "room-open" : "room-maintenance")" />
+                                                            <button class="btn btn-ghost-secondary btn-sm w-100 py-0 fs-6 text-truncate" type="submit" title="@(isMaintenance ? "Mở lại phòng cho sinh viên đăng ký" : "Chuyển sang trạng thái bảo trì/sửa chữa")">
+                                                                @(isMaintenance ? "✓ Mở phòng" : "⚙ Bảo trì")
+                                                            </button>
+                                                        </form>
+                                                    }
+                                                    else
+                                                    {
+                                                        @if (!isMaintenance && !isFull)
+                                                        {
+                                                            <a href="/Dormitory/Workspace?section=registrations#create-form" class="btn btn-outline-primary btn-sm w-100 py-0 fs-6 text-truncate" title="Đăng ký ở tại phòng này">
+                                                                <i class="ti ti-pencil me-1"></i> Đăng ký
+                                                            </a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted fs-6 d-block text-center py-0">
+                                                                @(isMaintenance ? "Đang sửa chữa" : "Hết giường")
+                                                            </span>
+                                                        }
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Client-side Fast Filtering Script for Room Matrix -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            let activeBldg = "all";
+            const bldgButtons = document.querySelectorAll("#bldgFilterGroup [data-bldg-filter]");
+            const floorSelect = document.getElementById("floorFilterSelect");
+            const statusSelect = document.getElementById("statusFilterSelect");
+            const searchInput = document.getElementById("roomSearchInput");
+            const roomCards = document.querySelectorAll("[data-room-item]");
+            const floorBlocks = document.querySelectorAll(".floor-block");
+            const bldgBlocks = document.querySelectorAll(".building-block");
+            const emptyState = document.getElementById("roomFilterEmptyState");
+
+            function applyFilters() {
+                const query = (searchInput.value || "").trim().toLowerCase();
+                const floorVal = floorSelect.value;
+                const statusVal = statusSelect.value;
+                let totalVisible = 0;
+
+                roomCards.forEach(card => {
+                    const bldg = card.getAttribute("data-bldg");
+                    const floor = card.getAttribute("data-floor");
+                    const status = card.getAttribute("data-status");
+                    const roomNum = card.getAttribute("data-room-num") || "";
+
+                    const matchBldg = activeBldg === "all" || bldg === activeBldg;
+                    const matchFloor = floorVal === "all" || floor === floorVal;
+                    const matchStatus = statusVal === "all" || status === statusVal;
+                    const matchQuery = !query || roomNum.includes(query);
+
+                    const isVisible = matchBldg && matchFloor && matchStatus && matchQuery;
+                    card.style.display = isVisible ? "" : "none";
+                    if (isVisible) totalVisible++;
+                });
+
+                // Update floor block visibility
+                floorBlocks.forEach(fb => {
+                    const visibleInFloor = fb.querySelectorAll("[data-room-item]:not([style*='display: none'])").length;
+                    fb.style.display = visibleInFloor > 0 ? "" : "none";
+                });
+
+                // Update building block visibility
+                bldgBlocks.forEach(bb => {
+                    const visibleInBldg = bb.querySelectorAll("[data-room-item]:not([style*='display: none'])").length;
+                    bb.style.display = visibleInBldg > 0 ? "" : "none";
+                });
+
+                // Show/hide empty state
+                if (emptyState) {
+                    emptyState.style.display = totalVisible === 0 ? "block" : "none";
+                }
+            }
+
+            bldgButtons.forEach(btn => {
+                btn.addEventListener("click", function () {
+                    bldgButtons.forEach(b => b.classList.remove("active"));
+                    this.classList.add("active");
+                    activeBldg = this.getAttribute("data-bldg-filter");
+                    applyFilters();
+                });
+            });
+
+            floorSelect?.addEventListener("change", applyFilters);
+            statusSelect?.addEventListener("change", applyFilters);
+            searchInput?.addEventListener("input", applyFilters);
+
+            window.resetRoomFilters = function () {
+                activeBldg = "all";
+                bldgButtons.forEach(b => {
+                    b.classList.toggle("active", b.getAttribute("data-bldg-filter") === "all");
+                });
+                if (floorSelect) floorSelect.value = "all";
+                if (statusSelect) statusSelect.value = "all";
+                if (searchInput) searchInput.value = "";
+                applyFilters();
+            };
+        });
+    </script>
 }
 
 <!-- ============================================== -->

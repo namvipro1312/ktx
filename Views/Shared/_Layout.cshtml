@@ -175,7 +175,7 @@
                     <div class="d-flex align-items-center">
                         <span class="text-muted fs-5 me-2">Ký túc xá</span>
                         <span class="text-muted me-2">/</span>
-                        <span class="fw-bold text-dark fs-4">@(ViewData["Title"] ?? "Tổng quan")</span>
+                        <span class="fw-bold text-dark fs-4">@(string.IsNullOrWhiteSpace(ViewData["Title"]?.ToString()) ? "Tổng quan" : ViewData["Title"])</span>
                     </div>
 
                     <!-- Topbar Right Actions -->
