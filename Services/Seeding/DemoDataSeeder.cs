@@ -79,25 +79,25 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
 
         var roomDefinitions = new (string bldgCode, string roomNum, int floor, string type, int cap, decimal price, string status, int occupiedCount)[]
         {
-            // TÒA A - KHU NAM (Tầng 1 -> Tầng 4)
+            // TÒA A - KHU NAM (Tầng 1 -> Tầng 4) - CHỈ 4 HOẶC 6 NGƯỜI
             ("A", "A-101", 1, "4 người", 4, 650000, "available", 0),
             ("A", "A-102", 1, "4 người", 4, 650000, "available", 2),
-            ("A", "A-103", 1, "6 người", 6, 520000, "available", 6), // Kín chỗ
-            ("A", "A-104", 1, "6 người", 6, 520000, "maintenance", 0), // Bảo trì
+            ("A", "A-103", 1, "6 người", 6, 520000, "available", 6), // Kín chỗ (tự động đóng)
+            ("A", "A-104", 1, "6 người", 6, 520000, "maintenance", 0), // Bảo trì (thủ công)
             ("A", "A-201", 2, "4 người", 4, 650000, "available", 1),
             ("A", "A-202", 2, "4 người", 4, 650000, "available", 0),
-            ("A", "A-203", 2, "4 người", 4, 650000, "available", 1),
+            ("A", "A-203", 2, "4 người", 4, 650000, "available", 1), // 1 sinh viên hợp đồng mẫu
             ("A", "A-204", 2, "6 người", 6, 520000, "available", 0),
             ("A", "A-301", 3, "4 người", 4, 650000, "available", 0),
             ("A", "A-302", 3, "6 người", 6, 520000, "available", 3),
             ("A", "A-303", 3, "6 người", 6, 520000, "available", 6), // Kín chỗ
-            ("A", "A-304", 3, "8 người", 8, 420000, "available", 0),
+            ("A", "A-304", 3, "6 người", 6, 520000, "available", 0),
             ("A", "A-401", 4, "4 người", 4, 650000, "available", 0),
             ("A", "A-402", 4, "6 người", 6, 520000, "available", 2),
-            ("A", "A-403", 4, "8 người", 8, 420000, "available", 4),
-            ("A", "A-404", 4, "8 người", 8, 420000, "available", 8), // Kín chỗ
+            ("A", "A-403", 4, "4 người", 4, 650000, "available", 1),
+            ("A", "A-404", 4, "6 người", 6, 520000, "available", 6), // Kín chỗ
 
-            // TÒA B - KHU NỮ (Tầng 1 -> Tầng 4)
+            // TÒA B - KHU NỮ (Tầng 1 -> Tầng 4) - CHỈ 4 HOẶC 6 NGƯỜI
             ("B", "B-101", 1, "4 người", 4, 700000, "available", 0),
             ("B", "B-102", 1, "4 người", 4, 700000, "available", 1),
             ("B", "B-103", 1, "4 người", 4, 700000, "available", 4), // Kín chỗ
@@ -106,15 +106,15 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
             ("B", "B-201", 2, "4 người", 4, 700000, "available", 0),
             ("B", "B-202", 2, "4 người", 4, 700000, "available", 2),
             ("B", "B-203", 2, "6 người", 6, 550000, "available", 0),
-            ("B", "B-204", 2, "6 người", 6, 550000, "maintenance", 0), // Bảo trì
+            ("B", "B-204", 2, "6 người", 6, 550000, "maintenance", 0), // Bảo trì (thủ công)
             ("B", "B-301", 3, "4 người", 4, 700000, "available", 0),
             ("B", "B-302", 3, "6 người", 6, 550000, "available", 2),
-            ("B", "B-303", 3, "8 người", 8, 450000, "available", 8), // Kín chỗ
-            ("B", "B-304", 3, "8 người", 8, 450000, "available", 0),
+            ("B", "B-303", 3, "6 người", 6, 550000, "available", 6), // Kín chỗ
+            ("B", "B-304", 3, "4 người", 4, 700000, "available", 0),
             ("B", "B-401", 4, "6 người", 6, 550000, "available", 0),
             ("B", "B-402", 4, "6 người", 6, 550000, "available", 3),
-            ("B", "B-403", 4, "8 người", 8, 450000, "available", 0),
-            ("B", "B-404", 4, "8 người", 8, 450000, "available", 4)
+            ("B", "B-403", 4, "4 người", 4, 700000, "available", 0),
+            ("B", "B-404", 4, "6 người", 6, 550000, "available", 2)
         };
 
         foreach (var def in roomDefinitions)
@@ -139,10 +139,32 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
                 db.rooms.Add(r);
                 await db.SaveChangesAsync();
             }
-
-            for (var i = 1; i <= r.capacity; i++)
+            else
             {
-                var bedNum = $"G{i:02}";
+                // Chuẩn hóa thông tin phòng theo quy định
+                r.capacity = (short)def.cap;
+                r.room_type = def.type;
+                r.monthly_price = def.price;
+                if (def.status == "maintenance") r.status = "maintenance";
+            }
+
+            // Danh sách mã giường hợp lệ chuẩn: G01, G02, ... G0{capacity}
+            var validBedNumbers = Enumerable.Range(1, def.cap).Select(i => $"G{i:D2}").ToHashSet();
+
+            // Loại bỏ các giường thừa/trùng lặp (trừ giường hợp đồng mẫu có ID = 1)
+            var bedsToRemove = r.beds
+                .Where(b => !validBedNumbers.Contains(b.bed_number) && b.id != 1)
+                .ToList();
+            if (bedsToRemove.Count > 0)
+            {
+                db.beds.RemoveRange(bedsToRemove);
+                foreach (var b in bedsToRemove) r.beds.Remove(b);
+            }
+
+            // Đảm bảo đúng số lượng và trạng thái từng giường G01..G0{capacity}
+            for (var i = 1; i <= def.cap; i++)
+            {
+                var bedNum = $"G{i:D2}";
                 var bed = r.beds.FirstOrDefault(b => b.bed_number == bedNum);
                 var isOccupied = i <= def.occupiedCount;
                 if (bed is null)
@@ -154,11 +176,26 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
                         status = isOccupied ? "occupied" : "available"
                     });
                 }
-                else if (isOccupied && bed.status == "available")
+                else
                 {
-                    bed.status = "occupied";
+                    if (bed.id == 1)
+                    {
+                        bed.status = "occupied";
+                    }
+                    else if (isOccupied && bed.status == "available")
+                    {
+                        bed.status = "occupied";
+                    }
                 }
             }
+
+            // Tự động đóng phòng nếu đầy, mở nếu còn chỗ (phòng bảo trì giữ nguyên)
+            if (r.status != "maintenance")
+            {
+                var availBeds = def.cap - def.occupiedCount;
+                r.status = availBeds <= 0 ? "full" : "available";
+            }
+
             await db.SaveChangesAsync();
         }
     }
