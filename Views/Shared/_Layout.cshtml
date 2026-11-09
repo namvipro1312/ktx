@@ -1,26 +1,26 @@
 @functions {
-    public static string GetNavIcon(string key) => key switch
+    public static string GetTablerIcon(string key) => key switch
     {
-        "" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"7\" height=\"9\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"9\" x=\"14\" y=\"12\" rx=\"1\"/><rect width=\"7\" height=\"5\" x=\"3\" y=\"16\" rx=\"1\"/></svg>",
-        "registrations" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><line x1=\"19\" x2=\"19\" y1=\"8\" y2=\"14\"/><line x1=\"22\" x2=\"16\" y1=\"11\" y2=\"11\"/></svg>",
-        "contracts" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><polyline points=\"14 2 14 8 20 8\"/><line x1=\"16\" x2=\"8\" y1=\"13\" y2=\"13\"/><line x1=\"16\" x2=\"8\" y1=\"17\" y2=\"17\"/></svg>",
-        "rooms" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2 4v16\"/><path d=\"M2 8h18a2 2 0 0 1 2 2v10\"/><path d=\"M2 17h20\"/><path d=\"M6 8v9\"/></svg>",
-        "buildings" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"16\" height=\"20\" x=\"4\" y=\"2\" rx=\"2\" ry=\"2\"/><path d=\"M9 22v-4h6v4\"/><path d=\"M8 6h.01\"/><path d=\"M16 6h.01\"/><path d=\"M12 6h.01\"/><path d=\"M12 10h.01\"/><path d=\"M12 14h.01\"/><path d=\"M16 10h.01\"/><path d=\"M16 14h.01\"/><path d=\"M8 10h.01\"/><path d=\"M8 14h.01\"/></svg>",
-        "services" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z\"/></svg>",
-        "repairs" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z\"/></svg>",
-        "rules" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z\"/><path d=\"M6 6h10\"/><path d=\"M6 10h10\"/><path d=\"M6 14h10\"/></svg>",
-        "guests" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>",
-        "assets" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z\"/><path d=\"m3.3 7 8.7 5 8.7-5\"/><path d=\"M12 22V12\"/></svg>",
-        "meters" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2v4\"/><path d=\"m4.93 4.93 2.83 2.83\"/><path d=\"M2 12h4\"/><circle cx=\"12\" cy=\"12\" r=\"8\"/><path d=\"m12 12 3-3\"/></svg>",
-        "utilities" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"13 2 3 14 12 14 11 22 21 10 12 10 13 2\"/></svg>",
-        "violations" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z\"/><line x1=\"12\" x2=\"12\" y1=\"9\" y2=\"13\"/><line x1=\"12\" x2=\"12.01\" y1=\"17\" y2=\"17\"/></svg>",
-        "payments" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"20\" height=\"14\" x=\"2\" y=\"5\" rx=\"2\"/><line x1=\"2\" x2=\"22\" y1=\"10\" y2=\"10\"/></svg>",
-        "deposits" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2v20\"/><path d=\"M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6\"/></svg>",
-        "refunds" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"1 4 1 10 7 10\"/><path d=\"M3.51 15a9 9 0 1 0 2.13-9.36L1 10\"/></svg>",
-        "reports" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><line x1=\"12\" x2=\"12\" y1=\"20\" y2=\"10\"/><line x1=\"18\" x2=\"18\" y1=\"20\" y2=\"4\"/><line x1=\"6\" x2=\"6\" y1=\"20\" y2=\"16\"/></svg>",
-        "notifications" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9\"/><path d=\"M10.3 21a1.94 1.94 0 0 0 3.4 0\"/></svg>",
-        "users" => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"/><path d=\"M16 3.13a4 4 0 0 1 0 7.75\"/></svg>",
-        _ => "<svg class=\"nav-icon\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"4\"/></svg>"
+        "" => "ti-dashboard",
+        "registrations" => "ti-user-check",
+        "contracts" => "ti-file-certificate",
+        "rooms" => "ti-bed",
+        "buildings" => "ti-building",
+        "services" => "ti-sparkles",
+        "repairs" => "ti-tools",
+        "rules" => "ti-book",
+        "guests" => "ti-users-group",
+        "assets" => "ti-box",
+        "meters" => "ti-gauge",
+        "utilities" => "ti-bolt",
+        "violations" => "ti-alert-triangle",
+        "payments" => "ti-receipt-2",
+        "deposits" => "ti-wallet",
+        "refunds" => "ti-receipt-refund",
+        "reports" => "ti-chart-bar",
+        "notifications" => "ti-bell",
+        "users" => "ti-user-cog",
+        _ => "ti-circle"
     };
 }
 @{
@@ -29,80 +29,251 @@
     var isAccountant = User.IsInRole("accountant");
     var isMaintenance = User.IsInRole("maintenance_staff");
     var active = ViewData["ActiveSection"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     var nav = new (string Key, string Label, string Group)[]
     {
-        ("", "Tổng quan", "Công việc"), ("registrations", "Đăng ký phòng", "Công việc"), ("contracts", "Hợp đồng", "Công việc"),
-        ("rooms", "Tòa và phòng", "Không gian"), ("buildings", "Tòa nhà", "Không gian"), ("services", "Dịch vụ", "Tiện ích"),
-        ("repairs", "Sửa chữa", "Tiện ích"), ("rules", "Nội quy", "Tiện ích"), ("guests", "Khách thăm", "Tiện ích"),
-        ("assets", "Tài sản phòng", "Không gian"), ("meters", "Đồng hồ", "Không gian"), ("utilities", "Điện nước", "Tài chính"),
-        ("violations", "Vi phạm nội quy", "Hệ thống"), ("payments", "Thanh toán", "Tài chính"), ("deposits", "Tiền đặt cọc", "Tài chính"),
-        ("refunds", "Hoàn tiền", "Tài chính"), ("reports", "Thống kê", "Tài chính"), ("notifications", "Thông báo", "Hệ thống"), ("users", "Tài khoản", "Hệ thống")
+        ("", "Tổng quan", "Điều hành & Lưu trú"),
+        ("registrations", "Xét duyệt đăng ký", "Điều hành & Lưu trú"),
+        ("contracts", "Hợp đồng & Nhận/trả phòng", "Điều hành & Lưu trú"),
+        ("rooms", "Phòng & Giường", "Không gian"),
+        ("buildings", "Tòa nhà ký túc xá", "Không gian"),
+        ("assets", "Tài sản thiết bị", "Không gian"),
+        ("meters", "Công tơ điện nước", "Không gian"),
+        ("services", "Danh mục dịch vụ", "Vận hành"),
+        ("repairs", "Điều phối sửa chữa", "Vận hành"),
+        ("rules", "Nội quy ký túc xá", "Vận hành"),
+        ("guests", "Sổ khách thăm", "Vận hành"),
+        ("utilities", "Chốt số điện nước", "Tài chính"),
+        ("payments", "Hóa đơn & Thu phí", "Tài chính"),
+        ("deposits", "Tiền cọc lưu trú", "Tài chính"),
+        ("refunds", "Hoàn trả tiền cọc", "Tài chính"),
+        ("reports", "Báo cáo thống kê", "Tài chính"),
+        ("violations", "Kỷ luật vi phạm", "Hệ thống"),
+        ("notifications", "Thông báo nội bộ", "Hệ thống"),
+        ("users", "Phân quyền người dùng", "Hệ thống")
     };
 }
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
-    <title>@ViewData["Title"] · Ký túc xá</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1e293b" />
+    <title>@(ViewData["Title"] ?? "Ký túc xá") · Quản lý Nội trú</title>
+
+    <!-- Google Fonts: Be Vietnam Pro -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Tabler Core CSS & Tabler Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/core@1.0.0-beta20/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css" />
+
+    <!-- Application CSS -->
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body class="@(User.Identity?.IsAuthenticated == true ? "app-shell" : "auth-shell")">
+<body class="@(User.Identity?.IsAuthenticated == true ? "layout-fluid" : "d-flex flex-column bg-white")">
 @if (User.Identity?.IsAuthenticated == true)
 {
-    <aside class="sidebar" id="sidebar">
-        <a class="brand" asp-controller="Dormitory" asp-action="Index" aria-label="Ký túc xá, về tổng quan">
-            <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-            <span><strong>NỘI TRÚ</strong><small>QUẢN LÝ KHU NỘI TRÚ</small></span>
-        </a>
-        <div class="campus-tag"><span class="live-dot"></span><span>Cơ sở chính</span><span class="campus-code">HN</span></div>
-        <nav class="side-nav" aria-label="Điều hướng chính">
-            @foreach (var group in nav.GroupBy(x => x.Group))
-            {
-                var visible = group.Where(x => isStudent ? x.Key is not ("reports" or "users" or "buildings" or "assets" or "meters" or "utilities") : isAdmin || x.Key == "notifications" || (isAccountant && x.Key is ("" or "payments" or "deposits" or "refunds" or "reports")) || (isMaintenance && x.Key is ("" or "rooms" or "repairs" or "assets" or "meters" or "utilities"))).ToList();
-                if (visible.Count == 0) { continue; }
-                <div class="nav-group"><p class="nav-group-title">@group.Key</p>
-                @foreach (var item in visible)
-                {
-                    var href = string.IsNullOrEmpty(item.Key) ? Url.Action("Index", "Dormitory") : Url.Action("Workspace", "Dormitory", new { section = item.Key });
-                    var current = active == item.Key && (item.Key.Length > 0 || ViewContext.RouteData.Values["action"]?.ToString() == "Index");
-                    <a class="nav-link @(current ? "is-active" : "")" href="@href" aria-current="@(current ? "page" : null)">
-                        @Html.Raw(GetNavIcon(item.Key))
-                        <span class="nav-label">@item.Label</span>
+    <div class="page">
+        <!-- Sidebar Navigation (Tabler Vertical) -->
+        <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark bg-dark border-end-0">
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Bật/tắt thanh điều hướng">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Brand / Logo -->
+                <h1 class="navbar-brand navbar-brand-autodark py-2 my-0">
+                    <a asp-controller="Dormitory" asp-action="Index" class="d-flex align-items-center text-decoration-none text-white">
+                        <span class="avatar avatar-sm bg-primary text-white rounded me-2">
+                            <i class="ti ti-building-community fs-2"></i>
+                        </span>
+                        <span class="d-flex flex-column text-start">
+                            <strong class="fs-3 fw-bold text-white tracking-wide">QUẢN LÝ NỘI TRÚ</strong>
+                            <small class="text-white-50 fs-6">Ký túc xá Đại học</small>
+                        </span>
                     </a>
-                }
+                </h1>
+
+                <!-- Mobile User Quick Avatar -->
+                <div class="navbar-nav flex-row d-lg-none">
+                    <div class="nav-item">
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                            <button type="submit" class="btn btn-outline-light btn-sm px-2" title="Đăng xuất">
+                                <i class="ti ti-logout fs-2"></i>
+                            </button>
+                        </form>
+                    </div>
                 </div>
-            }
-        </nav>
-        <div class="sidebar-foot">
-            <span class="demo-note"><span class="demo-dot"></span> Dữ liệu trình diễn</span>
-            <div class="user-mini"><span class="avatar">@(User.Identity?.Name?.Split(' ').LastOrDefault()?.FirstOrDefault() ?? 'Q')</span><span class="user-mini-info"><strong>@User.Identity?.Name</strong><small>@(isStudent ? "Sinh viên" : "Ban quản lý")</small></span></div>
+
+                <!-- Sidebar Body -->
+                <div class="collapse navbar-collapse" id="sidebar-menu">
+                    <!-- User Campus Role Pill -->
+                    <div class="px-3 py-2 my-2 rounded bg-dark-lt border border-white-10 d-flex align-items-center justify-content-between">
+                        <span class="badge @(isStudent ? "bg-cyan-lt text-cyan" : "bg-primary-lt text-primary") fw-medium">
+                            @(isStudent ? "Sinh viên" : isAdmin ? "Ban Quản lý KTX" : isAccountant ? "Kế toán" : "Kỹ thuật viên")
+                        </span>
+                        <span class="badge bg-secondary-lt text-white-50">CS-HN</span>
+                    </div>
+
+                    <!-- Navigation Groups -->
+                    <ul class="navbar-nav pt-lg-2">
+                        @foreach (var group in nav.GroupBy(x => x.Group))
+                        {
+                            var visible = group.Where(x => isStudent ? x.Key is not ("reports" or "users" or "buildings" or "assets" or "meters" or "utilities") : isAdmin || x.Key == "notifications" || (isAccountant && x.Key is ("" or "payments" or "deposits" or "refunds" or "reports")) || (isMaintenance && x.Key is ("" or "rooms" or "repairs" or "assets" or "meters" or "utilities"))).ToList();
+                            if (visible.Count == 0) { continue; }
+
+                            <li class="nav-item text-uppercase text-white-50 fw-semibold px-3 pt-3 pb-1 fs-6 tracking-wider">
+                                @group.Key
+                            </li>
+
+                            @foreach (var item in visible)
+                            {
+                                var href = string.IsNullOrEmpty(item.Key) ? Url.Action("Index", "Dormitory") : Url.Action("Workspace", "Dormitory", new { section = item.Key });
+                                var isCurrent = active == item.Key && (item.Key.Length > 0 || currentAction == "Index");
+                                <li class="nav-item @(isCurrent ? "active" : "")">
+                                    <a class="nav-link py-2 @(isCurrent ? "fw-bold text-white bg-primary-lt" : "text-white-75")" href="@href">
+                                        <span class="nav-link-icon d-inline-block me-2">
+                                            <i class="ti @GetTablerIcon(item.Key) fs-2"></i>
+                                        </span>
+                                        <span class="nav-link-title">@item.Label</span>
+                                    </a>
+                                </li>
+                            }
+                        }
+                    </ul>
+
+                    <!-- Sidebar Footer User Profile -->
+                    <div class="mt-auto pt-3 border-top border-white-10">
+                        <div class="d-flex align-items-center p-2 rounded bg-dark-lt">
+                            <span class="avatar avatar-sm bg-primary text-white rounded-circle me-2 fw-bold">
+                                @(User.Identity?.Name?.Split(' ').LastOrDefault()?.FirstOrDefault() ?? 'Q')
+                            </span>
+                            <div class="flex-fill text-truncate me-2">
+                                <div class="text-white text-truncate fw-medium fs-5">@User.Identity?.Name</div>
+                                <div class="text-white-50 fs-6">@(isStudent ? "Tài khoản sinh viên" : "Quản trị viên")</div>
+                            </div>
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                                <button type="submit" class="btn btn-icon btn-ghost-light btn-sm text-white-50" title="Đăng xuất" aria-label="Đăng xuất">
+                                    <i class="ti ti-logout fs-2"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Shell -->
+        <div class="page-wrapper">
+            <!-- Topbar Header -->
+            <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none border-bottom bg-white sticky-top py-2">
+                <div class="container-xl">
+                    <!-- Breadcrumb -->
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted fs-5 me-2">Ký túc xá</span>
+                        <span class="text-muted me-2">/</span>
+                        <span class="fw-bold text-dark fs-4">@(ViewData["Title"] ?? "Tổng quan")</span>
+                    </div>
+
+                    <!-- Topbar Right Actions -->
+                    <div class="navbar-nav flex-row order-md-last ms-auto align-items-center">
+                        <!-- Date Badge -->
+                        <div class="me-3">
+                            <span class="badge bg-light text-secondary border px-3 py-2 fw-normal fs-6">
+                                <i class="ti ti-calendar me-1"></i>
+                                @DateTime.Today.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))
+                            </span>
+                        </div>
+
+                        <!-- User Profile Chip -->
+                        <div class="d-flex align-items-center me-3">
+                            <span class="avatar avatar-sm bg-primary-lt text-primary rounded-circle fw-bold me-2">
+                                @(User.Identity?.Name?.Split(' ').LastOrDefault()?.FirstOrDefault() ?? 'Q')
+                            </span>
+                            <div class="d-flex flex-column">
+                                <span class="fw-semibold text-dark fs-5 leading-1">@User.Identity?.Name</span>
+                                <small class="text-muted fs-6">@(isStudent ? "Sinh viên" : "Quản trị viên")</small>
+                            </div>
+                        </div>
+
+                        <!-- Direct Logout -->
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm" title="Đăng xuất khỏi hệ thống">
+                                <i class="ti ti-logout me-1"></i> Đăng xuất
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Body -->
+            <div class="page-body my-3">
+                <div class="container-xl">
+                    <!-- Notifications / Alerts -->
+                    @if (TempData["Notice"] is string notice)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show shadow-sm mb-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="ti ti-circle-check fs-1 text-success me-2"></i>
+                                <div>@notice</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                        </div>
+                    }
+                    @if (TempData["Error"] is string error)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show shadow-sm mb-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="ti ti-alert-triangle fs-1 text-danger me-2"></i>
+                                <div>@error</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                        </div>
+                    }
+
+                    <!-- Core Page Content -->
+                    @RenderBody()
+                </div>
+            </div>
+
+            <!-- Tabler Modern Footer -->
+            <footer class="footer footer-transparent d-print-none py-3 border-top bg-white mt-auto">
+                <div class="container-xl">
+                    <div class="row text-center align-items-center flex-row-reverse">
+                        <div class="col-lg-auto ms-lg-auto">
+                            <ul class="list-inline list-inline-dots mb-0">
+                                <li class="list-inline-item"><span class="badge bg-green-lt text-green"><i class="ti ti-point-filled"></i> Máy chủ hoạt động tốt</span></li>
+                                <li class="list-inline-item"><a href="#" class="link-secondary">Hỗ trợ nội trú</a></li>
+                                <li class="list-inline-item"><a href="#" class="link-secondary">Quy định KTX</a></li>
+                            </ul>
+                        </div>
+                        <div class="col-12 col-lg-auto mt-3 mt-lg-0">
+                            <ul class="list-inline list-inline-dots mb-0 text-muted">
+                                <li class="list-inline-item">
+                                    © @DateTime.Now.Year <strong>Hệ thống Quản lý Ký túc xá</strong>. Bản quyền thuộc Ban Quản lý KTX Đại học.
+                                </li>
+                                <li class="list-inline-item">
+                                    Nền tảng Tabler Bootstrap 5
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </footer>
         </div>
-    </aside>
-    <div class="mobile-scrim" id="scrim"></div>
-    <div class="workspace-shell">
-        <header class="topbar">
-            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Mở điều hướng" aria-expanded="false"><span></span><span></span></button>
-            <div class="crumb"><span>Ký túc xá</span><span class="crumb-slash">/</span><strong>@(ViewData["Title"] ?? "Tổng quan")</strong></div>
-            <div class="topbar-actions"><span class="today">@DateTime.Today.ToString("dddd, dd/MM/yyyy", new System.Globalization.CultureInfo("vi-VN"))</span><span class="topbar-divider"></span><span class="avatar avatar-small">@(User.Identity?.Name?.Split(' ').LastOrDefault()?.FirstOrDefault() ?? 'Q')</span><form asp-controller="Account" asp-action="Logout" method="post"><button class="text-button" type="submit">Đăng xuất</button></form></div>
-        </header>
-        <main class="main-content" id="main-content">
-            @if (TempData["Notice"] is string notice) { <div class="notice notice-success" role="status"><span class="notice-mark">✓</span><span>@notice</span><button type="button" class="notice-close" aria-label="Đóng thông báo">×</button></div> }
-            @if (TempData["Error"] is string error) { <div class="notice notice-error" role="alert"><span class="notice-mark">!</span><span>@error</span><button type="button" class="notice-close" aria-label="Đóng thông báo">×</button></div> }
-            @RenderBody()
-        </main>
-        <footer class="app-footer"><span>Ký túc xá · Hệ thống quản lý lưu trú</span><span>Phiên bản phát triển</span></footer>
     </div>
 }
 else
 {
-    <main class="auth-frame">@RenderBody()</main>
+    @RenderBody()
 }
-<script src="~/js/site.js" asp-append-version="true"></script>
+
+<!-- Tabler Core JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/@@tabler/core@1.0.0-beta20/dist/js/tabler.min.js" defer></script>
+<script src="~/js/site.js" asp-append-version="true" defer></script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

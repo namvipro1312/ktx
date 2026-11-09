@@ -2,360 +2,488 @@
 @{
     ViewData["Title"] = Model.Title;
     ViewData["ActiveSection"] = Model.Section;
+    var isAdmin = User.IsInRole("system_admin") || User.IsInRole("dorm_manager");
 }
-<section class="page-heading module-heading">
-    <div><h1>@Model.Title</h1><p class="page-description">@Model.Description</p></div>
-    <div class="heading-meta"><span class="result-count">@Model.CountLabel</span>@if (Model.FormTitle is not null) { <a class="button button-primary" href="#create-form">@Model.FormTitle <span aria-hidden="true">＋</span></a> }</div>
-</section>
 
-@if (Model.Section == "rooms" && Model.RoomGroups.Count > 0)
-{
-    <section class="matrix-section">
-        <div class="matrix-header">
-            <div>
-                <h2>Sơ đồ phòng trực quan (Matrix Floorplan)</h2>
-                <p>Theo dõi tình trạng phòng và từng vị trí giường trực quan theo từng tòa và tầng.</p>
-            </div>
-            <div class="matrix-legend">
-                <span class="legend-item"><i class="dot dot-avail"></i> Còn chỗ trống</span>
-                <span class="legend-item"><i class="dot dot-full"></i> Đã kín chỗ</span>
-                <span class="legend-item"><i class="dot dot-maint"></i> Đang bảo trì</span>
+<!-- Workspace Page Header -->
+<div class="page-header d-print-none mb-3">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle text-muted text-uppercase">PHÂN HỆ NGHIỆP VỤ</div>
+            <h2 class="page-title text-dark fw-bold">@Model.Title</h2>
+            <p class="text-muted mb-0">@Model.Description</p>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
+                <span class="badge bg-secondary-lt fs-6 align-self-center py-2 px-3">
+                    <i class="ti ti-database me-1"></i> @Model.CountLabel
+                </span>
+                @if (Model.FormTitle is not null)
+                {
+                    <a class="btn btn-primary" href="#create-form">
+                        <i class="ti ti-plus me-1"></i> @Model.FormTitle
+                    </a>
+                }
             </div>
         </div>
+    </div>
+</div>
 
-        @foreach (var building in Model.RoomGroups)
-        {
-            <div class="building-matrix-card">
-                <div class="building-matrix-head">
-                    <span class="building-tag">TÒA @building.BuildingCode</span>
-                    <h3>@building.BuildingName</h3>
+<!-- ========================================== -->
+<!-- 1. ROOMS SECTION: HIGH-DENSITY ROOM MATRIX -->
+<!-- ========================================== -->
+@if (Model.Section == "rooms" && Model.RoomGroups.Count > 0)
+{
+    <!-- Room Matrix Header & Filter Bar -->
+    <div class="card shadow-sm border-0 mb-3">
+        <div class="card-body py-2">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h3 class="card-title mb-0 fw-bold">
+                        <i class="ti ti-layout-grid text-primary me-1"></i> Sơ đồ phòng trực quan (Matrix Floorplan)
+                    </h3>
+                    <small class="text-muted">Theo dõi tình trạng phòng và chỗ trống theo từng tòa nhà và tầng.</small>
                 </div>
+                <!-- Legend -->
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="badge bg-success-lt text-success"><i class="ti ti-point-filled"></i> Còn chỗ trống</span>
+                    <span class="badge bg-secondary-lt text-secondary"><i class="ti ti-point-filled"></i> Đã kín chỗ</span>
+                    <span class="badge bg-warning-lt text-warning"><i class="ti ti-point-filled"></i> Đang bảo trì</span>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Buildings Loop -->
+    @foreach (var building in Model.RoomGroups)
+    {
+        <div class="card shadow-sm border-0 mb-3">
+            <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-primary text-white me-2 fw-bold">TÒA @building.BuildingCode</span>
+                    <h3 class="card-title fw-bold mb-0 text-dark">@building.BuildingName</h3>
+                </div>
+                <div class="text-muted fs-6">
+                    @{
+                        var totalRooms = building.Floors.Sum(f => f.Rooms.Count);
+                        var totalAvail = building.Floors.Sum(f => f.Rooms.Sum(r => r.AvailableBeds));
+                        var totalCap = building.Floors.Sum(f => f.Rooms.Sum(r => r.Capacity));
+                    }
+                    <span>@totalRooms phòng</span> · <span class="text-success fw-semibold">@totalAvail/@totalCap chỗ trống</span>
+                </div>
+            </div>
+
+            <div class="card-body p-3">
                 @foreach (var floor in building.Floors)
                 {
-                    <div class="floor-matrix-row">
-                        <div class="floor-badge">
-                            <strong>TẦNG @floor.FloorNumber</strong>
+                    <div class="floor-block mb-3">
+                        <!-- Floor Divider -->
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="badge bg-dark text-white px-2 py-1 fs-6 me-2">
+                                <i class="ti ti-stairs me-1"></i> TẦNG @floor.FloorNumber
+                            </span>
+                            <div class="border-bottom flex-fill"></div>
                         </div>
-                        <div class="floor-rooms-grid">
+
+                        <!-- Compact Room Grid (High Density) -->
+                        <div class="row row-cards g-2">
                             @foreach (var room in floor.Rooms)
                             {
                                 var isMaintenance = room.Status == "maintenance";
                                 var isFull = room.AvailableBeds == 0;
-                                var cardState = isMaintenance ? "state-maint" : isFull ? "state-full" : "state-avail";
+                                var borderClass = isMaintenance ? "border-warning bg-warning-lt" : isFull ? "border-secondary-subtle bg-light" : "border-success-subtle bg-white";
+                                var pillClass = isMaintenance ? "bg-warning text-white" : isFull ? "bg-secondary text-white" : "bg-success text-white";
 
-                                <div class="room-box @cardState">
-                                    <div class="room-box-top">
-                                        <div class="room-id">
-                                            <span class="room-dot"></span>
-                                            <strong>@room.RoomNumber</strong>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                                    <div class="card card-sm shadow-none border @borderClass h-100">
+                                        <div class="card-body p-2 d-flex flex-column justify-content-between">
+                                            <!-- Room Top -->
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <strong class="fs-4 text-dark">@room.RoomNumber</strong>
+                                                <span class="badge @pillClass px-1 py-0 fs-6">
+                                                    @(isMaintenance ? "Bảo trì" : isFull ? "Kín" : $"{room.AvailableBeds}/{room.Capacity} trống")
+                                                </span>
+                                            </div>
+
+                                            <!-- Room Meta -->
+                                            <div class="text-muted fs-6 mb-1 text-truncate" title="@room.RoomType">
+                                                <span>@room.RoomType</span>
+                                            </div>
+                                            <div class="text-primary fw-semibold fs-6 mb-2">
+                                                @room.MonthlyPrice.ToString("N0") đ
+                                            </div>
+
+                                            <!-- Bed Chips / Dots -->
+                                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                                @foreach (var bed in room.Beds)
+                                                {
+                                                    var isBedAvail = bed.Status == "available";
+                                                    <span class="badge @(isBedAvail ? "bg-success text-white" : "bg-light text-muted border") px-1 py-0 fs-6"
+                                                          title="Giường @bed.BedNumber: @(isBedAvail ? "Còn trống" : "Đã có sinh viên ở")">
+                                                        <i class="ti ti-bed fs-6"></i> @bed.BedNumber
+                                                    </span>
+                                                }
+                                            </div>
+
+                                            <!-- Admin Toggle Button -->
+                                            @if (isAdmin)
+                                            {
+                                                <div class="mt-auto pt-1 border-top border-secondary-subtle">
+                                                    <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
+                                                        <input type="hidden" name="section" value="rooms" />
+                                                        <input type="hidden" name="id" value="@room.Id" />
+                                                        <input type="hidden" name="operation" value="@(isMaintenance ? "room-open" : "room-maintenance")" />
+                                                        <button class="btn btn-ghost-secondary btn-sm w-100 py-0 fs-6 text-truncate" type="submit">
+                                                            @(isMaintenance ? "✓ Mở phòng" : "⚙ Bảo trì")
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            }
                                         </div>
-                                        <span class="room-pill">
-                                            @(isMaintenance ? "Bảo trì" : isFull ? "Kín chỗ" : $"{room.AvailableBeds}/{room.Capacity} trống")
-                                        </span>
                                     </div>
-                                    <div class="room-info">
-                                        <span>@room.RoomType</span>
-                                        <span class="room-price">@room.MonthlyPrice.ToString("N0") ₫</span>
-                                    </div>
-                                    <div class="beds-mini-grid">
-                                        @foreach (var bed in room.Beds)
-                                        {
-                                            var isBedAvail = bed.Status == "available";
-                                            <span class="bed-chip @(isBedAvail ? "bed-avail" : "bed-occ")" title="Giường @bed.BedNumber: @(isBedAvail ? "Còn trống" : "Đã có sinh viên ở")">
-                                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 4v16"/><path d="M2 8h18a2 2 0 0 1 2 2v10"/><path d="M2 17h20"/><path d="M6 8v9"/></svg>
-                                                @bed.BedNumber
-                                            </span>
-                                        }
-                                    </div>
-                                    @if (User.IsInRole("system_admin") || User.IsInRole("dorm_manager"))
-                                    {
-                                        <div class="room-box-actions">
-                                            <form asp-controller="Dormitory" asp-action="Process" method="post" style="display:inline;">
-                                                <input type="hidden" name="section" value="rooms" />
-                                                <input type="hidden" name="id" value="@room.Id" />
-                                                <input type="hidden" name="operation" value="@(isMaintenance ? "room-open" : "room-maintenance")" />
-                                                <button class="btn-toggle-room" type="submit">
-                                                    @(isMaintenance ? "Mở phòng" : "Bảo trì")
-                                                </button>
-                                            </form>
-                                        </div>
-                                    }
                                 </div>
                             }
                         </div>
                     </div>
                 }
             </div>
-        }
-    </section>
+        </div>
+    }
 }
 
+<!-- ============================================== -->
+<!-- 2. REGISTRATIONS SECTION: APPROVAL & TRACKING  -->
+<!-- ============================================== -->
 @if (Model.Section == "registrations")
 {
     @if (Model.RegistrationStats is not null)
     {
-        <div class="reg-stats-grid">
-            <div class="reg-stat-card stat-total">
-                <div class="stat-icon">📋</div>
-                <div class="stat-info">
-                    <span class="stat-label">Tổng số hồ sơ</span>
-                    <strong class="stat-value">@Model.RegistrationStats.TotalCount</strong>
+        <!-- Stats Row -->
+        <div class="row row-cards g-3 mb-4">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-primary">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <span class="avatar avatar-md bg-primary-lt text-primary rounded me-3">
+                                <i class="ti ti-folders fs-1"></i>
+                            </span>
+                            <div>
+                                <div class="text-muted fs-6">Tổng số hồ sơ</div>
+                                <div class="h2 mb-0 fw-bold">@Model.RegistrationStats.TotalCount</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="reg-stat-card stat-pending">
-                <div class="stat-icon">⏳</div>
-                <div class="stat-info">
-                    <span class="stat-label">Chờ xét duyệt</span>
-                    <strong class="stat-value">@Model.RegistrationStats.PendingCount</strong>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-warning">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <span class="avatar avatar-md bg-warning-lt text-warning rounded me-3">
+                                <i class="ti ti-clock-hour-4 fs-1"></i>
+                            </span>
+                            <div>
+                                <div class="text-muted fs-6">Chờ xét duyệt</div>
+                                <div class="h2 mb-0 fw-bold text-warning">@Model.RegistrationStats.PendingCount</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="reg-stat-card stat-approved">
-                <div class="stat-icon">✅</div>
-                <div class="stat-info">
-                    <span class="stat-label">Đã duyệt & xếp phòng</span>
-                    <strong class="stat-value">@Model.RegistrationStats.ContractedCount</strong>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-success">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <span class="avatar avatar-md bg-success-lt text-success rounded me-3">
+                                <i class="ti ti-circle-check fs-1"></i>
+                            </span>
+                            <div>
+                                <div class="text-muted fs-6">Đã duyệt & Xếp phòng</div>
+                                <div class="h2 mb-0 fw-bold text-success">@Model.RegistrationStats.ContractedCount</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="reg-stat-card stat-rejected">
-                <div class="stat-icon">❌</div>
-                <div class="stat-info">
-                    <span class="stat-label">Từ chối / Hủy</span>
-                    <strong class="stat-value">@Model.RegistrationStats.RejectedCount</strong>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card card-sm shadow-sm border-0 border-start border-3 border-danger">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <span class="avatar avatar-md bg-danger-lt text-danger rounded me-3">
+                                <i class="ti ti-circle-x fs-1"></i>
+                            </span>
+                            <div>
+                                <div class="text-muted fs-6">Từ chối / Hủy</div>
+                                <div class="h2 mb-0 fw-bold text-danger">@Model.RegistrationStats.RejectedCount</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     }
 
-    @if (User.IsInRole("student") && !User.IsInRole("system_admin") && !User.IsInRole("dorm_manager"))
+    <!-- STUDENT VIEW: APPLICATION PROGRESS STEPPER -->
+    @if (User.IsInRole("student") && !isAdmin)
     {
         var myReg = Model.Registrations.FirstOrDefault();
-        if (myReg is not null)
+        if (myReg is null)
         {
-            <div class="student-reg-card">
-                <div class="student-reg-header">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body text-center py-5">
+                    <i class="ti ti-notes fs-1 text-muted d-block mb-3"></i>
+                    <h3 class="fw-bold text-dark">Bạn chưa nộp đơn đăng ký phòng ký túc xá</h3>
+                    <p class="text-muted mb-4">Hãy hoàn thành biểu mẫu đăng ký bên dưới để được Ban Quản lý xét duyệt chỗ ở.</p>
+                    <a href="#create-form" class="btn btn-primary">
+                        <i class="ti ti-pencil me-1"></i> Điền đơn đăng ký ngay
+                    </a>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                     <div>
-                        <span class="badge-code">MÃ ĐƠN: @myReg.RegistrationCode</span>
-                        <h3>Tiến trình xét duyệt hồ sơ nội trú</h3>
-                        <p class="sub-text">Thời điểm nộp: @myReg.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                        <h3 class="card-title fw-bold mb-0">Hồ sơ đăng ký nội trú của bạn: @myReg.RegistrationCode</h3>
+                        <small class="text-muted">Nộp lúc @myReg.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</small>
                     </div>
                     <div>
-                        <span class="status-pill state-@myReg.Status.Replace("_", "-")">@DormitoryController.StatusText(myReg.Status)</span>
+                        @{
+                            var regBadge = myReg.Status == "contracted" ? "bg-success-lt text-success"
+                                         : myReg.Status == "pending" ? "bg-warning-lt text-warning"
+                                         : myReg.Status == "rejected" ? "bg-danger-lt text-danger"
+                                         : "bg-secondary-lt text-secondary";
+                        }
+                        <span class="badge @regBadge fs-5 py-2 px-3">@DormitoryController.StatusText(myReg.Status)</span>
                     </div>
                 </div>
 
-                <div class="reg-stepper">
-                    <div class="step-item step-done">
-                        <div class="step-circle">1</div>
-                        <div class="step-label">Nộp hồ sơ</div>
-                        <small>@myReg.SubmittedAt.ToString("dd/MM")</small>
+                <div class="card-body p-4">
+                    <!-- Progress Stepper -->
+                    <div class="steps steps-counter steps-primary mb-4">
+                        <div class="step-item active">
+                            Nộp hồ sơ
+                            <span class="step-item-description">@myReg.SubmittedAt.ToString("dd/MM")</span>
+                        </div>
+                        <div class="step-item @(myReg.Status != "pending" ? "active" : "")">
+                            Xét duyệt BQL
+                            <span class="step-item-description">@(myReg.Status == "pending" ? "Đang chờ" : myReg.Status == "contracted" ? "Đạt" : "Từ chối")</span>
+                        </div>
+                        <div class="step-item @(myReg.Status == "contracted" ? "active" : "")">
+                            Xếp phòng & Lập HĐ
+                            <span class="step-item-description">@(myReg.Status == "contracted" ? "Đã xếp phòng" : "Chờ duyệt")</span>
+                        </div>
+                        <div class="step-item @(myReg.Status == "contracted" && myReg.ContractId.HasValue ? "active" : "")">
+                            Ký & Nhận phòng
+                            <span class="step-item-description">Thủ tục nhận phòng</span>
+                        </div>
                     </div>
-                    <div class="step-line @(myReg.Status != "pending" ? "line-done" : "")"></div>
-                    <div class="step-item @(myReg.Status == "pending" ? "step-active" : myReg.Status == "contracted" || myReg.Status == "approved" ? "step-done" : "step-fail")">
-                        <div class="step-circle">2</div>
-                        <div class="step-label">Xét duyệt BQL</div>
-                        <small>@(myReg.Status == "pending" ? "Đang chờ" : myReg.Status == "contracted" ? "Đạt yêu cầu" : "Từ chối")</small>
-                    </div>
-                    <div class="step-line @(myReg.Status == "contracted" ? "line-done" : "")"></div>
-                    <div class="step-item @(myReg.Status == "contracted" ? "step-done" : "")">
-                        <div class="step-circle">3</div>
-                        <div class="step-label">Xếp phòng & Lập HĐ</div>
-                        <small>@(myReg.Status == "contracted" ? "Đã phân phòng" : "Chờ duyệt")</small>
-                    </div>
-                    <div class="step-line @(myReg.Status == "contracted" && myReg.ContractId.HasValue ? "line-done" : "")"></div>
-                    <div class="step-item @(myReg.Status == "contracted" ? "step-active" : "")">
-                        <div class="step-circle">4</div>
-                        <div class="step-label">Ký & Nhận phòng</div>
-                        <small>Thủ tục nhập phòng</small>
-                    </div>
-                </div>
 
-                <div class="reg-info-grid">
-                    <div class="info-cell">
-                        <span class="cell-label">Tòa mong muốn</span>
-                        <strong>@myReg.PreferredBuildingName</strong>
+                    <!-- Details Grid -->
+                    <div class="row g-3 p-3 bg-light rounded mb-4">
+                        <div class="col-sm-6 col-md-3">
+                            <div class="text-muted fs-6">Tòa mong muốn:</div>
+                            <div class="fw-bold text-dark fs-5">@myReg.PreferredBuildingName</div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="text-muted fs-6">Loại phòng:</div>
+                            <div class="fw-bold text-dark fs-5">@myReg.PreferredRoomType</div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="text-muted fs-6">Thời hạn lưu trú:</div>
+                            <div class="fw-bold text-dark fs-5">@myReg.StartDate.ToString("dd/MM/yyyy") — @myReg.EndDate.ToString("dd/MM/yyyy")</div>
+                        </div>
+                        <div class="col-sm-6 col-md-3">
+                            <div class="text-muted fs-6">Ghi chú & Diện ưu tiên:</div>
+                            <div class="fw-bold text-dark fs-5">@(string.IsNullOrWhiteSpace(myReg.Note) ? "Tiêu chuẩn" : myReg.Note)</div>
+                        </div>
                     </div>
-                    <div class="info-cell">
-                        <span class="cell-label">Loại phòng</span>
-                        <strong>@myReg.PreferredRoomType</strong>
-                    </div>
-                    <div class="info-cell">
-                        <span class="cell-label">Thời hạn lưu trú</span>
-                        <strong>@myReg.StartDate.ToString("dd/MM/yyyy") — @myReg.EndDate.ToString("dd/MM/yyyy")</strong>
-                    </div>
-                    <div class="info-cell">
-                        <span class="cell-label">Ghi chú & Diện ưu tiên</span>
-                        <strong>@(string.IsNullOrWhiteSpace(myReg.Note) ? "Tiêu chuẩn" : myReg.Note)</strong>
-                    </div>
-                </div>
 
-                @if (myReg.Status == "contracted" && !string.IsNullOrWhiteSpace(myReg.AssignedBedInfo))
-                {
-                    <div class="alert-box alert-success">
-                        <div class="alert-icon">🎉</div>
-                        <div>
-                            <h4>Chúc mừng bạn đã được duyệt phân phòng thành công!</h4>
-                            <p>Vị trí giường của bạn: <strong>@myReg.AssignedBedInfo</strong>.</p>
-                            @if (!string.IsNullOrWhiteSpace(myReg.ReviewComment))
-                            {
-                                <p><em>"Lời nhắn BQL: @myReg.ReviewComment"</em></p>
-                            }
-                            <div class="alert-actions">
-                                <a class="button button-primary" href="/Dormitory/Workspace?section=contracts">Vào xem Hợp đồng & Nộp cọc →</a>
+                    <!-- Status Alerts -->
+                    @if (myReg.Status == "contracted" && !string.IsNullOrWhiteSpace(myReg.AssignedBedInfo))
+                    {
+                        <div class="alert alert-success d-flex align-items-center justify-content-between p-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="ti ti-party-popper fs-1 text-success me-3"></i>
+                                <div>
+                                    <h4 class="alert-heading mb-1 fw-bold">Chúc mừng! Bạn đã được duyệt phân phòng thành công!</h4>
+                                    <div>Vị trí giường của bạn: <strong class="fs-4">@myReg.AssignedBedInfo</strong></div>
+                                    @if (!string.IsNullOrWhiteSpace(myReg.ReviewComment))
+                                    {
+                                        <div class="mt-1 fst-italic">"Lời nhắn BQL: @myReg.ReviewComment"</div>
+                                    }
+                                </div>
+                            </div>
+                            <a class="btn btn-success" href="/Dormitory/Workspace?section=contracts">
+                                <i class="ti ti-file-text me-1"></i> Xem Hợp đồng & Nộp cọc →
+                            </a>
+                        </div>
+                    }
+                    else if (myReg.Status == "rejected")
+                    {
+                        <div class="alert alert-danger d-flex align-items-center p-3" role="alert">
+                            <i class="ti ti-alert-triangle fs-1 text-danger me-3"></i>
+                            <div>
+                                <h4 class="alert-heading mb-1 fw-bold">Hồ sơ chưa được duyệt</h4>
+                                <div>Lý do: <strong>@(string.IsNullOrWhiteSpace(myReg.ReviewComment) ? "Chưa đáp ứng điều kiện chỉ tiêu đợt này." : myReg.ReviewComment)</strong></div>
+                                <div class="text-muted fs-6 mt-1">Bạn có thể nộp lại đơn đăng ký khác ở biểu mẫu bên dưới.</div>
                             </div>
                         </div>
-                    </div>
-                }
-                else if (myReg.Status == "rejected")
-                {
-                    <div class="alert-box alert-danger">
-                        <div class="alert-icon">⚠️</div>
-                        <div>
-                            <h4>Hồ sơ của bạn chưa được duyệt</h4>
-                            <p>Lý do từ Ban quản lý: <strong>@(string.IsNullOrWhiteSpace(myReg.ReviewComment) ? "Chưa đáp ứng điều kiện chỉ tiêu đợt này." : myReg.ReviewComment)</strong></p>
-                            <p class="sub-text">Bạn có thể nộp lại đơn đăng ký khác ở biểu mẫu bên dưới.</p>
+                    }
+                    else if (myReg.Status == "pending")
+                    {
+                        <div class="d-flex justify-content-between align-items-center pt-2">
+                            <span class="text-muted fs-6">Hồ sơ đang được Ban Quản lý đối soát chỉ tiêu giường. Bạn có thể hủy nếu đổi ý.</span>
+                            <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn đăng ký phòng này?');">
+                                <input type="hidden" name="section" value="registrations" />
+                                <input type="hidden" name="id" value="@myReg.Id" />
+                                <input type="hidden" name="operation" value="registration-cancel" />
+                                <button class="btn btn-outline-danger btn-sm" type="submit">
+                                    <i class="ti ti-x me-1"></i> Hủy đơn đăng ký này
+                                </button>
+                            </form>
                         </div>
-                    </div>
-                }
-                else if (myReg.Status == "pending")
-                {
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px;">
-                        <span class="sub-text">Hồ sơ đang được Ban quản lý đối soát chỉ tiêu giường. Bạn có thể hủy nếu đổi ý.</span>
-                        <form asp-controller="Dormitory" asp-action="Process" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn đăng ký phòng này?');">
-                            <input type="hidden" name="section" value="registrations" />
-                            <input type="hidden" name="id" value="@myReg.Id" />
-                            <input type="hidden" name="operation" value="registration-cancel" />
-                            <button class="button button-danger" type="submit">Hủy đơn đăng ký này</button>
-                        </form>
-                    </div>
-                }
+                    }
+                </div>
             </div>
         }
     }
     else
     {
-        <div class="admin-approval-panel" style="background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; margin-bottom:24px;">
-            <div class="table-toolbar">
-                <div class="table-title">
-                    <span class="route-mini-node"></span>
-                    <h2>Danh sách hồ sơ đăng ký phòng cần xét duyệt</h2>
-                </div>
-                <div class="table-controls">
-                    @if (Model.RegistrationStats?.PendingCount > 0)
-                    {
-                        <form asp-controller="Dormitory" asp-action="Process" method="post" style="display:inline;" onsubmit="return confirm('Hệ thống sẽ tự động duyệt và xếp giường cho tất cả các hồ sơ đang chờ có phòng phù hợp. Bạn muốn tiếp tục?');">
-                            <input type="hidden" name="section" value="registrations" />
-                            <input type="hidden" name="id" value="0" />
-                            <input type="hidden" name="operation" value="auto-allocate-all" />
-                            <button class="button button-accent-auto" type="submit">⚡ Tự động duyệt tất cả (@Model.RegistrationStats.PendingCount đơn)</button>
-                        </form>
-                    }
-                    <label class="table-search">
-                        <span>Tìm sinh viên / mã hồ sơ</span>
-                        <input type="search" data-table-search placeholder="Mã hồ sơ, tên, mã SV..." autocomplete="off" />
-                    </label>
-                    <label class="table-filter">
-                        <span>Lọc trạng thái</span>
-                        <select data-table-status>
-                            <option value="">Tất cả</option>
-                            <option value="pending">Chờ xử lý</option>
-                            <option value="contracted">Đã phân giường</option>
-                            <option value="rejected">Từ chối</option>
-                            <option value="cancelled">Đã hủy</option>
-                        </select>
-                    </label>
+        <!-- ADMIN / MANAGER VIEW: APPROVAL TABLE -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="row align-items-center g-2">
+                    <div class="col-md-4">
+                        <h3 class="card-title fw-bold mb-0">
+                            <i class="ti ti-clipboard-check text-primary me-2"></i> Danh sách hồ sơ đăng ký phòng cần xét duyệt
+                        </h3>
+                    </div>
+                    <div class="col-md-8 text-md-end">
+                        <div class="d-flex flex-wrap justify-content-md-end align-items-center gap-2">
+                            @if (Model.RegistrationStats?.PendingCount > 0)
+                            {
+                                <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0" onsubmit="return confirm('Hệ thống sẽ tự động duyệt và xếp giường cho tất cả hồ sơ đang chờ có phòng phù hợp. Tiếp tục?');">
+                                    <input type="hidden" name="section" value="registrations" />
+                                    <input type="hidden" name="id" value="0" />
+                                    <input type="hidden" name="operation" value="auto-allocate-all" />
+                                    <button class="btn btn-warning btn-sm" type="submit">
+                                        <i class="ti ti-bolt me-1"></i> Tự động duyệt tất cả (@Model.RegistrationStats.PendingCount đơn)
+                                    </button>
+                                </form>
+                            }
+                            <input type="search" class="form-control form-control-sm w-auto" data-table-search placeholder="Tìm sinh viên, mã hồ sơ..." autocomplete="off" />
+                            <select class="form-select form-select-sm w-auto" data-table-status>
+                                <option value="">Tất cả trạng thái</option>
+                                <option value="pending">Chờ xử lý</option>
+                                <option value="contracted">Đã phân giường</option>
+                                <option value="rejected">Từ chối</option>
+                                <option value="cancelled">Đã hủy</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             @if (!Model.Registrations.Any())
             {
-                <div class="empty-state empty-table">
-                    <span class="empty-line"></span>
-                    <strong>Chưa có hồ sơ đăng ký phòng nào</strong>
-                    <p>Khi sinh viên nộp đơn đăng ký chỗ ở, hồ sơ sẽ hiển thị tại đây để Ban quản lý xét duyệt.</p>
+                <div class="card-body text-center py-5">
+                    <i class="ti ti-inbox fs-1 text-muted d-block mb-2"></i>
+                    <h3 class="fw-bold text-dark">Chưa có hồ sơ đăng ký phòng nào</h3>
+                    <p class="text-muted mb-0">Khi sinh viên nộp đơn đăng ký chỗ ở, hồ sơ sẽ hiển thị tại đây để Ban quản lý xét duyệt.</p>
                 </div>
             }
             else
             {
-                <div class="table-scroll">
-                    <table class="data-table">
+                <div class="table-responsive">
+                    <table class="table table-vcenter card-table table-hover table-striped">
                         <thead>
                             <tr>
-                                <th scope="col">Mã hồ sơ</th>
-                                <th scope="col">Sinh viên</th>
-                                <th scope="col">Nguyện vọng</th>
-                                <th scope="col">Thời hạn xin ở</th>
-                                <th scope="col">Diện ưu tiên / Ghi chú</th>
-                                <th scope="col">Trạng thái</th>
-                                <th scope="col">Giường được phân</th>
-                                <th scope="col" class="action-head" style="text-align:center;">Thao tác xét duyệt</th>
+                                <th>Mã hồ sơ</th>
+                                <th>Sinh viên</th>
+                                <th>Nguyện vọng</th>
+                                <th>Thời hạn</th>
+                                <th>Ưu tiên / Ghi chú</th>
+                                <th>Trạng thái</th>
+                                <th>Giường phân bổ</th>
+                                <th class="text-center">Thao tác xét duyệt</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var reg in Model.Registrations)
                             {
                                 var isPending = reg.Status == "pending";
+                                var statusBadge = reg.Status == "contracted" ? "bg-success-lt text-success"
+                                                : reg.Status == "pending" ? "bg-warning-lt text-warning"
+                                                : reg.Status == "rejected" ? "bg-danger-lt text-danger"
+                                                : "bg-secondary-lt text-secondary";
+
                                 <tr class="row-state-@reg.Status" data-filter-row data-row-state="@reg.Status">
-                                    <td class="record-cell">
-                                        <strong>@reg.RegistrationCode</strong>
-                                        <div class="sub-text">@reg.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                                    <td>
+                                        <strong class="text-dark">@reg.RegistrationCode</strong>
+                                        <div class="text-muted fs-6">@reg.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</div>
                                     </td>
                                     <td>
-                                        <div class="student-mini">
-                                            <strong>@reg.StudentName</strong>
-                                            <div class="sub-text">Mã SV: @reg.StudentCode · @reg.Gender · @reg.Faculty</div>
-                                            <div class="sub-text text-muted">SĐT: @reg.Phone</div>
-                                        </div>
+                                        <div class="fw-semibold text-dark">@reg.StudentName</div>
+                                        <div class="text-muted fs-6">MSV: @reg.StudentCode · @reg.Gender · @reg.Faculty</div>
+                                        <div class="text-muted fs-6">SĐT: @reg.Phone</div>
                                     </td>
                                     <td>
-                                        <div><strong>@reg.PreferredBuildingName</strong></div>
-                                        <div class="sub-text">Loại: @reg.PreferredRoomType</div>
+                                        <div class="fw-semibold text-primary">@reg.PreferredBuildingName</div>
+                                        <div class="text-muted fs-6">Loại: @reg.PreferredRoomType</div>
                                     </td>
                                     <td>
-                                        <div>@reg.StartDate.ToString("dd/MM/yyyy")</div>
-                                        <div class="sub-text">đến @reg.EndDate.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-dark">@reg.StartDate.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-muted fs-6">đến @reg.EndDate.ToString("dd/MM/yyyy")</div>
                                     </td>
                                     <td>
-                                        <div class="note-truncate" title="@reg.Note">
+                                        <div class="text-truncate" style="max-width:160px;" title="@reg.Note">
                                             @(string.IsNullOrWhiteSpace(reg.Note) ? "—" : reg.Note)
                                         </div>
                                     </td>
                                     <td>
-                                        <span class="status-pill state-@reg.Status.Replace("_", "-")">@DormitoryController.StatusText(reg.Status)</span>
+                                        <span class="badge @statusBadge">@DormitoryController.StatusText(reg.Status)</span>
                                     </td>
                                     <td>
                                         @if (!string.IsNullOrWhiteSpace(reg.AssignedBedInfo))
                                         {
-                                            <span class="assigned-bed-tag">🛏️ @reg.AssignedBedInfo</span>
+                                            <span class="badge bg-teal-lt text-teal">
+                                                <i class="ti ti-bed me-1"></i> @reg.AssignedBedInfo
+                                            </span>
                                         }
                                         else if (reg.Status == "rejected")
                                         {
-                                            <span style="color:#ef4444; font-size:11px; font-weight:600;" title="@reg.ReviewComment">❌ @(string.IsNullOrWhiteSpace(reg.ReviewComment) ? "Từ chối" : reg.ReviewComment)</span>
+                                            <span class="text-danger fs-6 fw-semibold" title="@reg.ReviewComment">
+                                                ✕ @(string.IsNullOrWhiteSpace(reg.ReviewComment) ? "Từ chối" : reg.ReviewComment)
+                                            </span>
                                         }
                                         else
                                         {
-                                            <span class="text-muted">Chưa phân</span>
+                                            <span class="text-muted fs-6">Chưa phân</span>
                                         }
                                     </td>
-                                    <td class="row-actions" style="text-align:center;">
+                                    <td class="text-center">
                                         @if (isPending)
                                         {
-                                            <div class="action-stack-buttons">
-                                                <button type="button" class="btn-action-approve" onclick="openApproveModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName', '@reg.PreferredBuildingName', '@reg.PreferredRoomType')">
-                                                    ✓ Duyệt phòng
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-success" onclick="openApproveModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName', '@reg.PreferredBuildingName', '@reg.PreferredRoomType')">
+                                                    <i class="ti ti-check me-1"></i> Duyệt
                                                 </button>
-                                                <button type="button" class="btn-action-reject" onclick="openRejectModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName')">
-                                                    ✕ Từ chối
+                                                <button type="button" class="btn btn-outline-danger" onclick="openRejectModal(@reg.Id, '@reg.RegistrationCode', '@reg.StudentName')">
+                                                    <i class="ti ti-x me-1"></i> Từ chối
                                                 </button>
                                             </div>
                                         }
                                         else if (reg.ContractId.HasValue)
                                         {
-                                            <a class="row-action row-action-primary" href="/Dormitory/ContractView/@reg.ContractId.Value">Xem HĐ nháp →</a>
+                                            <a class="btn btn-outline-primary btn-sm" href="/Dormitory/ContractView/@reg.ContractId.Value">
+                                                Xem HĐ <i class="ti ti-arrow-right ms-1"></i>
+                                            </a>
                                         }
                                         else
                                         {
-                                            <span class="sub-text">Đã xử lý</span>
+                                            <span class="text-muted fs-6">Đã xử lý</span>
                                         }
                                     </td>
                                 </tr>
@@ -366,82 +494,81 @@
             }
         </div>
 
-        <div id="modalApprove" class="custom-modal" style="display:none;">
-            <div class="modal-backdrop" onclick="closeApproveModal()"></div>
-            <div class="modal-dialog">
-                <form asp-controller="Dormitory" asp-action="Process" method="post">
-                    <input type="hidden" name="section" value="registrations" />
-                    <input type="hidden" name="id" id="approveRegId" value="" />
-                    <input type="hidden" name="operation" value="approve" />
-                    <div class="modal-head">
-                        <h3>Duyệt hồ sơ & Phân bổ giường KTX</h3>
-                        <button type="button" class="modal-close" onclick="closeApproveModal()">×</button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="modal-applicant-info">
-                            <div>Mã hồ sơ: <strong id="approveModalCode"></strong></div>
-                            <div>Sinh viên: <strong id="approveModalStudent"></strong></div>
-                            <div>Nguyện vọng: <span id="approveModalPref"></span></div>
+        <!-- MODAL APPROVE -->
+        <div id="modalApprove" class="modal modal-blur fade show" style="display:none; background:rgba(15,23,42,0.6);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form asp-controller="Dormitory" asp-action="Process" method="post">
+                        <input type="hidden" name="section" value="registrations" />
+                        <input type="hidden" name="id" id="approveRegId" value="" />
+                        <input type="hidden" name="operation" value="approve" />
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold"><i class="ti ti-check text-success me-2"></i>Duyệt hồ sơ & Phân bổ giường KTX</h5>
+                            <button type="button" class="btn-close" onclick="closeApproveModal()" aria-label="Close"></button>
                         </div>
+                        <div class="modal-body">
+                            <div class="p-3 bg-light rounded mb-3">
+                                <div>Mã hồ sơ: <strong id="approveModalCode" class="text-dark"></strong></div>
+                                <div>Sinh viên: <strong id="approveModalStudent" class="text-primary"></strong></div>
+                                <div>Nguyện vọng: <span id="approveModalPref" class="text-muted"></span></div>
+                            </div>
 
-                        <label class="field" style="margin-top:14px;">
-                            <span>Chọn giường phân bổ</span>
-                            <select name="bedId" id="approveBedSelect">
-                                <option value="0">⚡ Tự động tìm giường phù hợp nhất</option>
-                                @foreach (var bed in Model.AvailableBedsList)
-                                {
-                                    <option value="@bed.BedId">@bed.DisplayLabel</option>
-                                }
-                            </select>
-                            <small class="sub-text">Nếu để mặc định, hệ thống tự động tìm giường theo đúng tòa và loại phòng nguyện vọng.</small>
-                        </label>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Chọn giường phân bổ</label>
+                                <select name="bedId" id="approveBedSelect" class="form-select">
+                                    <option value="0">⚡ Tự động tìm giường phù hợp nhất</option>
+                                    @foreach (var bed in Model.AvailableBedsList)
+                                    {
+                                        <option value="@bed.BedId">@bed.DisplayLabel</option>
+                                    }
+                                </select>
+                                <small class="form-hint">Nếu để mặc định, hệ thống tự động tìm giường theo đúng tòa và loại phòng nguyện vọng.</small>
+                            </div>
 
-                        <label class="field" style="margin-top:14px;">
-                            <span>Lời dặn / Ghi chú xét duyệt gửi sinh viên</span>
-                            <textarea name="comment" rows="3" placeholder="Ví dụ: Đã duyệt phân phòng theo nguyện vọng. Vui lòng hoàn tất nộp cọc..."></textarea>
-                        </label>
-                    </div>
-                    <div class="modal-foot">
-                        <button type="button" class="button" onclick="closeApproveModal()">Đóng</button>
-                        <button type="submit" class="button button-primary">Xác nhận duyệt & Tạo hợp đồng</button>
-                    </div>
-                </form>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Lời dặn / Ghi chú gửi sinh viên</label>
+                                <textarea name="comment" rows="3" class="form-control" placeholder="Ví dụ: Đã duyệt phân phòng theo nguyện vọng. Vui lòng hoàn tất nộp cọc..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-link link-secondary" onclick="closeApproveModal()">Đóng</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="ti ti-check me-1"></i> Xác nhận duyệt & Tạo hợp đồng
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <div id="modalReject" class="custom-modal" style="display:none;">
-            <div class="modal-backdrop" onclick="closeRejectModal()"></div>
-            <div class="modal-dialog">
-                <form asp-controller="Dormitory" asp-action="Process" method="post">
-                    <input type="hidden" name="section" value="registrations" />
-                    <input type="hidden" name="id" id="rejectRegId" value="" />
-                    <input type="hidden" name="operation" value="reject" />
-                    <div class="modal-head">
-                        <h3>Từ chối hồ sơ đăng ký phòng</h3>
-                        <button type="button" class="modal-close" onclick="closeRejectModal()">×</button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="modal-applicant-info">
-                            <div>Mã hồ sơ: <strong id="rejectModalCode"></strong></div>
-                            <div>Sinh viên: <strong id="rejectModalStudent"></strong></div>
+        <!-- MODAL REJECT -->
+        <div id="modalReject" class="modal modal-blur fade show" style="display:none; background:rgba(15,23,42,0.6);" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <form asp-controller="Dormitory" asp-action="Process" method="post">
+                        <input type="hidden" name="section" value="registrations" />
+                        <input type="hidden" name="id" id="rejectRegId" value="" />
+                        <input type="hidden" name="operation" value="reject" />
+                        <div class="modal-header">
+                            <h5 class="modal-title fw-bold text-danger"><i class="ti ti-alert-triangle text-danger me-2"></i>Từ chối hồ sơ đăng ký</h5>
+                            <button type="button" class="btn-close" onclick="closeRejectModal()" aria-label="Close"></button>
                         </div>
-
-                        <label class="field" style="margin-top:14px;">
-                            <span>Lý do từ chối (sẽ gửi thông báo đến sinh viên)</span>
-                            <select onchange="document.getElementById('rejectReasonInput').value = this.value;">
-                                <option value="">-- Chọn lý do mẫu hoặc tự nhập --</option>
-                                <option value="Khu nội trú hiện đã hết chỗ trống cho loại phòng bạn đăng ký.">Hết chỗ trống loại phòng yêu cầu</option>
-                                <option value="Thông tin sinh viên hoặc giấy tờ minh chứng chưa chính xác, vui lòng kiểm tra lại.">Thông tin sinh viên chưa chính xác</option>
-                                <option value="Không thuộc đối tượng tiếp nhận nội trú trong đợt xét tuyển này.">Không thuộc đối tượng tiếp nhận đợt này</option>
-                            </select>
-                            <textarea id="rejectReasonInput" name="comment" rows="3" required placeholder="Nhập chi tiết lý do từ chối..." style="margin-top:8px;"></textarea>
-                        </label>
-                    </div>
-                    <div class="modal-foot">
-                        <button type="button" class="button" onclick="closeRejectModal()">Hủy bỏ</button>
-                        <button type="submit" class="button button-danger">Xác nhận từ chối hồ sơ</button>
-                    </div>
-                </form>
+                        <div class="modal-body">
+                            <div class="p-3 bg-light rounded mb-3">
+                                <div>Mã hồ sơ: <strong id="rejectModalCode" class="text-dark"></strong></div>
+                                <div>Sinh viên: <strong id="rejectModalStudent" class="text-danger"></strong></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Lý do từ chối hồ sơ</label>
+                                <textarea name="comment" rows="3" class="form-control" required placeholder="Nêu rõ lý do: Hết chỉ tiêu phòng, không thuộc diện ưu tiên..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-link link-secondary" onclick="closeRejectModal()">Đóng</button>
+                            <button type="submit" class="btn btn-danger">Xác nhận từ chối</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
 
@@ -451,7 +578,7 @@
                 document.getElementById('approveModalCode').innerText = code;
                 document.getElementById('approveModalStudent').innerText = student;
                 document.getElementById('approveModalPref').innerText = bldg + ' · ' + rtype;
-                document.getElementById('modalApprove').style.display = 'flex';
+                document.getElementById('modalApprove').style.display = 'block';
             }
             function closeApproveModal() {
                 document.getElementById('modalApprove').style.display = 'none';
@@ -460,7 +587,7 @@
                 document.getElementById('rejectRegId').value = id;
                 document.getElementById('rejectModalCode').innerText = code;
                 document.getElementById('rejectModalStudent').innerText = student;
-                document.getElementById('modalReject').style.display = 'flex';
+                document.getElementById('modalReject').style.display = 'block';
             }
             function closeRejectModal() {
                 document.getElementById('modalReject').style.display = 'none';
@@ -469,76 +596,178 @@
     }
 }
 
+<!-- ============================================== -->
+<!-- 3. GENERAL DATA TABLES (ALL OTHER SECTIONS)   -->
+<!-- ============================================== -->
 @if (!Model.RoomGroups.Any() && Model.Section != "registrations")
 {
-    <section class="data-section">
-    <div class="table-toolbar">
-        <div class="table-title">
-            <span class="route-mini-node"></span>
-            <h2>@(Model.Section == "repairs" ? "Yêu cầu mới nhất" : Model.Section == "rooms" ? "Danh sách bảng chi tiết phòng" : "Bản ghi hiện có")</h2>
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3">
+            <div class="row align-items-center g-2">
+                <div class="col-md-5">
+                    <h3 class="card-title fw-bold mb-0">
+                        <i class="ti ti-table text-primary me-2"></i>
+                        @(Model.Section == "repairs" ? "Yêu cầu sửa chữa mới nhất" : Model.Section == "rooms" ? "Danh sách chi tiết phòng" : "Danh sách bản ghi hiện có")
+                    </h3>
+                </div>
+                <div class="col-md-7 text-md-end">
+                    <div class="d-flex flex-wrap justify-content-md-end align-items-center gap-2">
+                        <input type="search" class="form-control form-control-sm w-auto" data-table-search placeholder="Tìm mã, tên hoặc nội dung..." autocomplete="off" />
+                        <select class="form-select form-select-sm w-auto" data-table-status>
+                            <option value="">Tất cả trạng thái</option>
+                            @foreach (var state in Model.Rows.Select(x => x.State).Distinct().OrderBy(x => x))
+                            {
+                                <option value="@state">@DormitoryController.StatusText(state)</option>
+                            }
+                        </select>
+                        <span class="badge bg-secondary-lt fs-6">
+                            <span data-visible-count>@Model.Rows.Count</span> / @Model.Rows.Count bản ghi
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="table-controls">
-            <label class="table-search">
-                <span>Tìm trong danh sách</span>
-                <input type="search" data-table-search placeholder="Mã, tên hoặc nội dung" autocomplete="off" />
-            </label>
-            <label class="table-filter">
-                <span>Trạng thái</span>
-                <select data-table-status>
-                    <option value="">Tất cả</option>
-                    @foreach (var state in Model.Rows.Select(x => x.State).Distinct().OrderBy(x => x))
-                    {
-                        <option value="@state">@DormitoryController.StatusText(state)</option>
-                    }
-                </select>
-            </label>
-            <span class="table-hint"><span data-visible-count>@Model.Rows.Count</span> / @Model.Rows.Count · SQL Server</span>
-        </div>
-    </div>
-    @if (!Model.Rows.Any())
-    {
-        <div class="empty-state empty-table"><span class="empty-line"></span><strong>Chưa có dữ liệu trong mục này</strong><p>Khi phát sinh hồ sơ, bản ghi sẽ được hiển thị ở đây.</p></div>
-    }
-    else
-    {
-        <div class="table-scroll"><table class="data-table"><thead><tr>@foreach (var column in Model.Columns) { <th scope="col">@column</th> }@if (Model.Rows.Any(x => x.Actions.Count > 0)) { <th scope="col" class="action-head">Thao tác</th> }</tr></thead><tbody>
-        @foreach (var row in Model.Rows)
+
+        @if (!Model.Rows.Any())
         {
-            <tr class="row-state-@row.State" data-filter-row data-row-state="@row.State"><td class="record-cell">@row.Cells.ElementAtOrDefault(0)</td>@for (var cellIndex = 1; cellIndex < row.Cells.Count; cellIndex++) { <td>@if (cellIndex == row.Cells.Count - 1 && Model.Section != "reports") { <span class="status-pill state-@row.State.Replace("_", "-")">@row.Cells[cellIndex]</span> } else { @row.Cells[cellIndex] }</td> }
-            @if (Model.Rows.Any(x => x.Actions.Count > 0)) { <td class="row-actions"><div class="action-stack">@foreach (var action in row.Actions) { <form asp-controller="Dormitory" asp-action="Process" method="post"><input type="hidden" name="section" value="@Model.Section" /><input type="hidden" name="id" value="@row.Id" /><input type="hidden" name="operation" value="@action.Operation" /><button class="row-action @(action.Primary ? "row-action-primary" : "")" type="submit">@action.Label</button></form> }</div></td> }
-            </tr>
+            <div class="card-body text-center py-5">
+                <i class="ti ti-database-off fs-1 text-muted d-block mb-2"></i>
+                <h3 class="fw-bold text-dark">Chưa có dữ liệu trong mục này</h3>
+                <p class="text-muted mb-0">Khi phát sinh hồ sơ hoặc nghiệp vụ, các bản ghi sẽ hiển thị tại đây.</p>
+            </div>
         }
-        </tbody></table></div>
-        <p class="filter-empty" data-filter-empty hidden>Không có bản ghi nào khớp bộ lọc.</p>
-    }
-</section>
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-hover table-striped">
+                    <thead>
+                        <tr>
+                            @foreach (var column in Model.Columns)
+                            {
+                                <th>@column</th>
+                            }
+                            @if (Model.Rows.Any(x => x.Actions.Count > 0))
+                            {
+                                <th class="text-center">Thao tác</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.Rows)
+                        {
+                            var rowState = row.State;
+                            var badgeClass = rowState.Contains("contracted") || rowState.Contains("paid") || rowState.Contains("active") || rowState.Contains("resolved") || rowState.Contains("completed") ? "bg-success-lt text-success"
+                                           : rowState.Contains("pending") || rowState.Contains("unpaid") || rowState.Contains("in_progress") ? "bg-warning-lt text-warning"
+                                           : rowState.Contains("rejected") || rowState.Contains("cancelled") || rowState.Contains("overdue") ? "bg-danger-lt text-danger"
+                                           : "bg-secondary-lt text-secondary";
+
+                            <tr class="row-state-@row.State" data-filter-row data-row-state="@row.State">
+                                <td class="fw-semibold text-dark">@row.Cells.ElementAtOrDefault(0)</td>
+                                @for (var cellIndex = 1; cellIndex < row.Cells.Count; cellIndex++)
+                                {
+                                    <td>
+                                        @if (cellIndex == row.Cells.Count - 1 && Model.Section != "reports")
+                                        {
+                                            <span class="badge @badgeClass">@row.Cells[cellIndex]</span>
+                                        }
+                                        else
+                                        {
+                                            @row.Cells[cellIndex]
+                                        }
+                                    </td>
+                                }
+                                @if (Model.Rows.Any(x => x.Actions.Count > 0))
+                                {
+                                    <td class="text-center">
+                                        <div class="btn-list justify-content-center">
+                                            @foreach (var action in row.Actions)
+                                            {
+                                                <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
+                                                    <input type="hidden" name="section" value="@Model.Section" />
+                                                    <input type="hidden" name="id" value="@row.Id" />
+                                                    <input type="hidden" name="operation" value="@action.Operation" />
+                                                    <button class="btn btn-sm @(action.Primary ? "btn-primary" : "btn-outline-secondary")" type="submit">
+                                                        @action.Label
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white text-muted" data-filter-empty hidden>
+                <i class="ti ti-info-circle me-1"></i> Không có bản ghi nào khớp với điều kiện lọc.
+            </div>
+        }
+    </div>
 }
 
+<!-- ============================================== -->
+<!-- 4. CREATE / ACTION FORM CARD                  -->
+<!-- ============================================== -->
 @if (Model.FormTitle is not null && Model.Fields.Count > 0)
 {
-    <section class="form-section" id="create-form">
-        <div class="form-intro">
-            <span class="form-mark">＋</span>
-            <div>
-                <h2>@Model.FormTitle</h2>
-                <p>@(Model.FormHelp ?? "Thông tin sẽ được lưu vào hồ sơ vận hành.")</p>
+    <div class="card shadow-sm border-0 mb-4" id="create-form">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex align-items-center">
+                <span class="avatar avatar-sm bg-primary-lt text-primary rounded me-2">
+                    <i class="ti ti-plus fs-2"></i>
+                </span>
+                <div>
+                    <h3 class="card-title fw-bold mb-0">@Model.FormTitle</h3>
+                    <small class="text-muted">@(Model.FormHelp ?? "Thông tin sẽ được ghi nhận vào hồ sơ vận hành hệ thống.")</small>
+                </div>
             </div>
         </div>
-        <form asp-controller="Dormitory" asp-action="Create" method="post" class="record-form">
-            <input type="hidden" name="section" value="@Model.Section" />
-            @foreach (var field in Model.Fields)
-            {
-                <label class="field">
-                    <span>@field.Label@if (field.Required) { <i aria-hidden="true"> · bắt buộc</i> }</span>
-                    @if (field.Type == "select") { <select name="@field.Name" required="@(field.Required ? "required" : null)"><option value="">Chọn @field.Label.ToLowerInvariant()</option>@foreach (var option in field.Options) { <option value="@option.Value">@option.Label</option> }</select> }
-                    else if (field.Type == "textarea") { <textarea name="@field.Name" rows="4" required="@(field.Required ? "required" : null)"></textarea> }
-                    else { <input name="@field.Name" type="@field.Type" required="@(field.Required ? "required" : null)" min="@(field.Type == "number" ? "0" : null)" step="@(field.Type == "number" ? "any" : null)" /> }
-                </label>
-            }
-            <div class="form-actions">
-                <button class="button button-primary" type="submit">Lưu thông tin <span aria-hidden="true">→</span></button>
-                <span class="form-footnote">Các trường bắt buộc được đánh dấu trên biểu mẫu.</span>
-            </div>
-        </form>
-    </section>
+        <div class="card-body p-4">
+            <form asp-controller="Dormitory" asp-action="Create" method="post">
+                <input type="hidden" name="section" value="@Model.Section" />
+                <div class="row g-3">
+                    @foreach (var field in Model.Fields)
+                    {
+                        var isFullWidth = field.Type == "textarea" || field.Name.Contains("note") || field.Name.Contains("address");
+                        <div class="@(isFullWidth ? "col-12" : "col-md-6 col-lg-4")">
+                            <label class="form-label fw-semibold">
+                                @field.Label
+                                @if (field.Required)
+                                {
+                                    <span class="text-danger">*</span>
+                                }
+                            </label>
+
+                            @if (field.Type == "select")
+                            {
+                                <select name="@field.Name" class="form-select" required="@(field.Required ? "required" : null)">
+                                    <option value="">-- Chọn @field.Label.ToLowerInvariant() --</option>
+                                    @foreach (var option in field.Options)
+                                    {
+                                        <option value="@option.Value">@option.Label</option>
+                                    }
+                                </select>
+                            }
+                            else if (field.Type == "textarea")
+                            {
+                                <textarea name="@field.Name" rows="3" class="form-control" required="@(field.Required ? "required" : null)" placeholder="Nhập @field.Label.ToLowerInvariant()..."></textarea>
+                            }
+                            else
+                            {
+                                <input name="@field.Name" type="@field.Type" class="form-control" required="@(field.Required ? "required" : null)" min="@(field.Type == "number" ? "0" : null)" step="@(field.Type == "number" ? "any" : null)" placeholder="Nhập @field.Label.ToLowerInvariant()..." />
+                            }
+                        </div>
+                    }
+                </div>
+
+                <div class="d-flex align-items-center justify-content-between mt-4 pt-3 border-top">
+                    <button class="btn btn-primary px-4" type="submit">
+                        <i class="ti ti-check me-1"></i> Lưu thông tin dữ liệu
+                    </button>
+                    <span class="text-muted fs-6"><span class="text-danger">*</span> Các trường có dấu sao là bắt buộc.</span>
+                </div>
+            </form>
+        </div>
+    </div>
 }

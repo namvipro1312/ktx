@@ -1,15 +1,98 @@
 @{
     ViewData["Title"] = "Đăng nhập";
 }
-<div class="login-layout">
-    <section class="login-visual"><a class="brand login-brand" asp-controller="Account" asp-action="Login"><span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span><span><strong>NỘI TRÚ</strong><small>QUẢN LÝ KHU NỘI TRÚ</small></span></a><div class="login-route" aria-hidden="true"><span class="login-route-line"></span><i class="login-node node-red"></i><i class="login-node node-blue"></i><i class="login-node node-amber"></i><i class="login-node node-green"></i></div><div class="login-visual-copy"><h1>Một hành trình<br />lưu trú rõ ràng.</h1><p>Từ lúc gửi đăng ký đến ngày trả phòng, mọi hồ sơ đều có bước tiếp theo.</p></div><div class="login-visual-foot"><span>HỆ THỐNG QUẢN LÝ KÝ TÚC XÁ</span><span>01 — 05 · NỘI TRÚ</span></div></section>
-    <section class="login-form-wrap"><div class="login-form-card"><div class="login-mobile-brand"><span class="brand-mark"><span></span><span></span><span></span></span><strong>NỘI TRÚ</strong></div><h2>Đăng nhập</h2><p class="login-subtitle">Dùng tài khoản được cấp để tiếp tục.</p>
-        <div asp-validation-summary="ModelOnly" class="validation-summary" role="alert"></div>
-        <form asp-controller="Account" asp-action="Login" method="post" class="login-form">
-            <label class="field"><span>Tên đăng nhập</span><input name="username" autocomplete="username" required autofocus placeholder="Nhập tên đăng nhập" /></label>
-            <label class="field"><span>Mật khẩu</span><input name="password" type="password" autocomplete="current-password" required placeholder="Nhập mật khẩu" /></label>
-            <button class="button button-primary login-submit" type="submit">Vào hệ thống <span aria-hidden="true">→</span></button>
-        </form>
-        @if (ViewData["ShowDemoCredentials"] as bool? == true) { <div class="demo-credentials"><div class="demo-credentials-head"><span class="demo-dot"></span><strong>TÀI KHOẢN DÙNG THỬ</strong></div><div><span>Quản trị</span><code>admin</code><span class="credential-separator">/</span><code>Demo@123</code></div><div><span>Sinh viên</span><code>sv001</code><span class="credential-separator">/</span><code>Demo@123</code></div><p>Chỉ dùng trên môi trường phát triển. Đổi mật khẩu và xóa dữ liệu demo trước khi triển khai.</p></div> }
-    </div><footer class="login-copyright">Bản phát triển · Kết nối cơ sở dữ liệu ký túc xá</footer></section>
+
+<div class="page page-center bg-light min-vh-100 d-flex flex-column justify-content-center py-4">
+    <div class="container container-tight">
+        <!-- Brand / Logo -->
+        <div class="text-center mb-4">
+            <a asp-controller="Account" asp-action="Login" class="navbar-brand navbar-brand-autodark d-inline-flex align-items-center text-decoration-none">
+                <span class="avatar avatar-md bg-primary text-white rounded me-2 shadow-sm">
+                    <i class="ti ti-building-community fs-1"></i>
+                </span>
+                <span class="d-flex flex-column text-start">
+                    <strong class="fs-2 fw-bold text-dark tracking-wide">QUẢN LÝ NỘI TRÚ</strong>
+                    <small class="text-muted fs-6">Ký túc xá Đại học</small>
+                </span>
+            </a>
+        </div>
+
+        <!-- Login Card -->
+        <div class="card card-md shadow-sm border-0">
+            <div class="card-body p-4">
+                <h2 class="card-title text-center mb-1 fs-3 fw-bold text-dark">Đăng nhập tài khoản</h2>
+                <p class="text-muted text-center mb-4 fs-6">Hệ thống quản lý chỗ ở và dịch vụ nội trú sinh viên.</p>
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 mb-3 fs-6" role="alert"></div>
+
+                <form asp-controller="Account" asp-action="Login" method="post" autocomplete="off">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên đăng nhập</label>
+                        <div class="input-icon">
+                            <span class="input-icon-addon">
+                                <i class="ti ti-user fs-3"></i>
+                            </span>
+                            <input id="loginUsername" name="username" type="text" class="form-control" autocomplete="username" required autofocus placeholder="Nhập tên đăng nhập (VD: admin, sv001)" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label class="form-label fw-semibold mb-0">Mật khẩu</label>
+                            <span class="text-muted fs-6">Mặc định: Demo@@123</span>
+                        </div>
+                        <div class="input-icon">
+                            <span class="input-icon-addon">
+                                <i class="ti ti-lock fs-3"></i>
+                            </span>
+                            <input id="loginPassword" name="password" type="password" class="form-control" autocomplete="current-password" required placeholder="Nhập mật khẩu" />
+                        </div>
+                    </div>
+
+                    <div class="form-footer mt-4">
+                        <button type="submit" class="btn btn-primary w-100 py-2 fs-5 fw-semibold shadow-sm">
+                            <i class="ti ti-login me-1"></i> Đăng nhập vào hệ thống
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Demo Account Quick Switcher -->
+                <div class="hr-text text-muted my-4">Tài khoản dùng thử nhanh (Demo)</div>
+                <div class="row g-2">
+                    <div class="col-6">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 text-truncate" onclick="fillDemo('admin', 'Demo@123')">
+                            <i class="ti ti-shield text-primary me-1"></i> <strong>Admin</strong>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 text-truncate" onclick="fillDemo('sv001', 'Demo@123')">
+                            <i class="ti ti-school text-cyan me-1"></i> <strong>Sinh viên 1</strong>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 text-truncate" onclick="fillDemo('ketoan01', 'Demo@123')">
+                            <i class="ti ti-receipt text-success me-1"></i> <strong>Kế toán</strong>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-outline-secondary btn-sm w-100 text-truncate" onclick="fillDemo('kythuat01', 'Demo@123')">
+                            <i class="ti ti-tools text-warning me-1"></i> <strong>Kỹ thuật</strong>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center text-muted mt-3 fs-6">
+            © @DateTime.Now.Year Ban Quản lý Ký túc xá · Nền tảng Tabler Bootstrap 5
+        </div>
+    </div>
 </div>
+
+<script>
+    function fillDemo(username, password) {
+        document.getElementById('loginUsername').value = username;
+        document.getElementById('loginPassword').value = password;
+        document.getElementById('loginUsername').focus();
+    }
+</script>

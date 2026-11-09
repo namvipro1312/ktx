@@ -1,41 +1,404 @@
 @model DashboardViewModel
 @{
-    ViewData["Title"] = Model.IsStudent ? "Không gian của bạn" : "Tổng quan vận hành";
+    ViewData["Title"] = Model.IsStudent ? "Không gian lưu trú" : "Tổng quan vận hành";
 }
-<section class="page-heading dashboard-heading">
-    <div><h1>@(Model.IsStudent ? $"Chào {Model.DisplayName.Split(' ').LastOrDefault()}" : "Tổng quan vận hành")</h1><p class="page-description">@(Model.IsStudent ? "Theo dõi hành trình lưu trú và các việc bạn cần hoàn tất." : "Theo dõi luồng hồ sơ, chỗ ở và việc cần xử lý trong hôm nay.")</p></div>
-    @if (Model.IsStudent) { <a class="button button-primary" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="registrations">Đăng ký phòng <span aria-hidden="true">↗</span></a> }
-    else { <a class="button button-primary" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="registrations">Mở hàng chờ <span aria-hidden="true">↗</span></a> }
-</section>
 
-<section class="route-panel" aria-label="@(Model.IsStudent ? "Hành trình lưu trú" : "Luồng vận hành")">
-    <div class="route-panel-head"><div><h2>@(Model.IsStudent ? "Hành trình lưu trú" : "Luồng nội trú")</h2><p>@(Model.IsStudent ? "Các mốc liên quan đến hồ sơ của bạn." : "Bấm một điểm để mở danh sách công việc tương ứng.")</p></div><span class="route-legend"><i></i> Việc đang theo dõi</span></div>
-    <div class="route-map" role="list">
-        @for (var i = 0; i < Model.Stations.Count; i++)
-        {
-            var station = Model.Stations[i];
-            var href = Url.Action("Workspace", "Dormitory", new { section = station.Key, station = station.Key });
-            <a class="route-station route-@station.Color" role="listitem" href="@href" aria-label="@station.Label, @station.Count mục">
-                <span class="station-node"><span></span></span><span class="station-label">@station.Label</span><strong class="station-count">@station.Count.ToString("00")</strong>
-            </a>
-        }
+<!-- Page Header -->
+<div class="page-header d-print-none mb-3">
+    <div class="row g-2 align-items-center">
+        <div class="col">
+            <div class="page-pretitle text-muted">
+                @(Model.IsStudent ? "CỔNG THÔNG TIN SINH VIÊN" : "TRUNG TÂM ĐIỀU HÀNH KÝ TÚC XÁ")
+            </div>
+            <h2 class="page-title text-dark fw-bold">
+                @(Model.IsStudent ? $"Chào bạn, {Model.DisplayName}" : "Tổng quan điều hành ký túc xá")
+            </h2>
+            <p class="text-muted mb-0">
+                @(Model.IsStudent ? "Theo dõi hành trình lưu trú, hợp đồng và hóa đơn của bạn." : "Theo dõi công suất phòng ở, hồ sơ đăng ký và các công việc cần xử lý hôm nay.")
+            </p>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+            <div class="btn-list">
+                @if (Model.IsStudent)
+                {
+                    <a class="btn btn-primary" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="registrations">
+                        <i class="ti ti-pencil-plus me-1"></i> Đăng ký phòng mới
+                    </a>
+                }
+                else
+                {
+                    <a class="btn btn-primary" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="registrations">
+                        <i class="ti ti-clipboard-list me-1"></i> Hàng chờ xét duyệt (@Model.PendingRegistrations)
+                    </a>
+                }
+            </div>
+        </div>
     </div>
-</section>
+</div>
 
-<section class="dashboard-lower">
-    <div class="task-section">
-        <div class="section-heading"><div><h2>@(Model.IsStudent ? "Việc của bạn" : "Hàng chờ cần chú ý")</h2><p>@(Model.IsStudent ? "Trạng thái mới nhất từ các yêu cầu của bạn." : "Các hồ sơ đến trước và sự cố cần theo dõi.")</p></div><a class="quiet-link" asp-controller="Dormitory" asp-action="Workspace" asp-route-section="registrations">Xem đăng ký <span aria-hidden="true">→</span></a></div>
-        <div class="task-list">
-            @if (!Model.Tasks.Any()) { <div class="empty-state"><span class="empty-line"></span><strong>Chưa có việc cần xử lý</strong><p>Các cập nhật mới sẽ xuất hiện tại đây.</p></div> }
-            @foreach (var task in Model.Tasks)
+<!-- KPI Stat Cards Row -->
+<div class="row row-cards g-3 mb-4">
+    <!-- Card 1: Giường còn trống -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm shadow-sm border-0 border-start border-3 border-primary h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="avatar avatar-md bg-primary-lt text-primary rounded">
+                            <i class="ti ti-bed fs-1"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted fs-6 fw-medium text-uppercase">Giường còn trống</div>
+                        <div class="h2 mb-0 fw-bold text-dark">@Model.AvailableBeds.ToString("00") <small class="fs-6 text-muted font-weight-normal">chỗ</small></div>
+                        <div class="text-muted fs-6 mt-1">Sẵn sàng đón sinh viên</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent py-1 px-3 border-top-0">
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "rooms" })" class="text-primary fs-6 fw-medium text-decoration-none">
+                    Xem danh sách phòng <i class="ti ti-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 2: Hồ sơ chờ duyệt -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm shadow-sm border-0 border-start border-3 border-warning h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="avatar avatar-md bg-warning-lt text-warning rounded">
+                            <i class="ti ti-user-check fs-1"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted fs-6 fw-medium text-uppercase">Hồ sơ chờ duyệt</div>
+                        <div class="h2 mb-0 fw-bold text-dark">@Model.PendingRegistrations.ToString("00") <small class="fs-6 text-muted font-weight-normal">đơn</small></div>
+                        <div class="text-muted fs-6 mt-1">Cần ban quản lý xét duyệt</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent py-1 px-3 border-top-0">
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "registrations" })" class="text-warning fs-6 fw-medium text-decoration-none">
+                    Xử lý hồ sơ ngay <i class="ti ti-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 3: Hợp đồng đang ở -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm shadow-sm border-0 border-start border-3 border-success h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="avatar avatar-md bg-success-lt text-success rounded">
+                            <i class="ti ti-file-certificate fs-1"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted fs-6 fw-medium text-uppercase">Hợp đồng lưu trú</div>
+                        <div class="h2 mb-0 fw-bold text-dark">@Model.ActiveContracts.ToString("00") <small class="fs-6 text-muted font-weight-normal">hợp đồng</small></div>
+                        <div class="text-muted fs-6 mt-1">Sinh viên đang ở thực tế</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent py-1 px-3 border-top-0">
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "contracts" })" class="text-success fs-6 fw-medium text-decoration-none">
+                    Quản lý hợp đồng <i class="ti ti-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card 4: Công nợ / Số dư -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-sm shadow-sm border-0 border-start border-3 border-danger h-100">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <span class="avatar avatar-md bg-danger-lt text-danger rounded">
+                            <i class="ti ti-receipt-2 fs-1"></i>
+                        </span>
+                    </div>
+                    <div class="col">
+                        <div class="text-muted fs-6 fw-medium text-uppercase">Số dư hóa đơn</div>
+                        <div class="h2 mb-0 fw-bold text-dark">@Model.Outstanding.ToString("N0") <small class="fs-6 text-muted font-weight-normal">đ</small></div>
+                        <div class="text-muted fs-6 mt-1">@(Model.IsStudent ? "Số tiền bạn cần nộp" : "Tổng công nợ chưa thu")</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent py-1 px-3 border-top-0">
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "payments" })" class="text-danger fs-6 fw-medium text-decoration-none">
+                    Chi tiết hóa đơn <i class="ti ti-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Workflow Stations Ribbon -->
+<div class="card mb-4 shadow-sm border-0">
+    <div class="card-header bg-white py-2">
+        <div class="d-flex align-items-center">
+            <i class="ti ti-route text-primary me-2 fs-2"></i>
+            <h3 class="card-title fs-4 mb-0 fw-bold">@(Model.IsStudent ? "Hành trình lưu trú nội trú" : "Luồng công tác nội trú")</h3>
+        </div>
+    </div>
+    <div class="card-body py-3">
+        <div class="row g-2 align-items-center">
+            @for (var i = 0; i < Model.Stations.Count; i++)
             {
-                <a class="task-row" href="@task.Href"><span class="task-route-dot"></span><span class="task-main"><strong>@task.Title</strong><small>@task.Detail</small></span><span class="status-pill @(task.State.Contains("Chờ") || task.State.Contains("Cần") ? "status-pending" : task.State.Contains("Đã") ? "status-done" : "status-active")">@task.State</span><span class="task-arrow" aria-hidden="true">↗</span></a>
+                var station = Model.Stations[i];
+                var href = Url.Action("Workspace", "Dormitory", new { section = station.Key, station = station.Key });
+                <div class="col-6 col-sm-4 col-md-3 col-lg">
+                    <a href="@href" class="card card-sm card-link shadow-none border bg-light text-decoration-none p-2 text-center d-block h-100 hover-card">
+                        <div class="text-muted fs-6 text-truncate">@station.Label</div>
+                        <div class="fs-3 fw-bold text-primary">@station.Count.ToString("00")</div>
+                    </a>
+                </div>
             }
         </div>
     </div>
-    <aside class="summary-column">
-        <div class="summary-block"><span class="summary-label">GIƯỜNG CÒN TRỐNG</span><strong>@Model.AvailableBeds.ToString("00")</strong><p>Giường có thể phân trong toàn khu.</p><a href="@Url.Action("Workspace", "Dormitory", new { section = "rooms" })">Xem phòng <span aria-hidden="true">→</span></a></div>
-        <div class="summary-block summary-finance"><span class="summary-label">SỐ DƯ CHƯA ĐỐI SOÁT</span><strong>@Model.Outstanding.ToString("N0")<small> ₫</small></strong><p>@(Model.IsStudent ? "Số tiền còn lại trên hóa đơn của bạn." : "Tổng số dư còn lại từ các hóa đơn.")</p><a href="@Url.Action("Workspace", "Dormitory", new { section = "payments" })">Mở thanh toán <span aria-hidden="true">→</span></a></div>
-        <div class="trust-note"><span class="trust-symbol" aria-hidden="true">i</span><span>Số liệu minh họa để chạy thử. Hãy thay bằng dữ liệu của đơn vị trước khi vận hành.</span></div>
-    </aside>
-</section>
+</div>
+
+<!-- Main 2-Column Section -->
+<div class="row g-4">
+    <!-- Left Column: Tasks Queue & Building Occupancy (8 cols) -->
+    <div class="col-lg-8">
+        <!-- Card: Tasks Queue -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <div class="d-flex align-items-center">
+                    <i class="ti ti-list-check text-primary me-2 fs-2"></i>
+                    <div>
+                        <h3 class="card-title fw-bold mb-0">@(Model.IsStudent ? "Việc cần hoàn tất của bạn" : "Hàng chờ cần xử lý trong hôm nay")</h3>
+                        <p class="card-subtitle text-muted mb-0 fs-6">Các công việc yêu cầu sự phê duyệt hoặc phối hợp từ ban quản lý.</p>
+                    </div>
+                </div>
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "registrations" })" class="btn btn-sm btn-outline-primary">
+                    Mở toàn bộ <i class="ti ti-arrow-right ms-1"></i>
+                </a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-vcenter card-table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nội dung công việc</th>
+                            <th>Mã tham chiếu / Chi tiết</th>
+                            <th>Trạng thái</th>
+                            <th class="w-1"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!Model.Tasks.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <i class="ti ti-clipboard-check fs-1 text-success d-block mb-2"></i>
+                                    <strong>Hiện không có việc tồn đọng cần xử lý</strong>
+                                    <p class="mb-0 fs-6 text-muted">Mọi yêu cầu nội trú đã được xử lý xong.</p>
+                                </td>
+                            </tr>
+                        }
+                        @foreach (var task in Model.Tasks)
+                        {
+                            var badgeClass = task.State.Contains("Chờ") || task.State.Contains("Cần") ? "bg-warning-lt text-warning"
+                                           : task.State.Contains("Đã") ? "bg-success-lt text-success"
+                                           : "bg-blue-lt text-blue";
+                            <tr>
+                                <td>
+                                    <span class="status-dot @(task.State.Contains("Chờ") ? "status-dot-animated bg-warning" : "bg-success") me-2"></span>
+                                    <strong class="text-dark">@task.Title</strong>
+                                </td>
+                                <td class="text-muted fs-6">
+                                    @task.Detail
+                                </td>
+                                <td>
+                                    <span class="badge @badgeClass">@task.State</span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="@task.Href" class="btn btn-sm btn-outline-secondary px-2 py-1" title="Xem chi tiết">
+                                        <i class="ti ti-arrow-up-right fs-2"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Card: Building Occupancy (Clean replacement for screenshot 2) -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <div class="d-flex align-items-center">
+                    <i class="ti ti-building text-primary me-2 fs-2"></i>
+                    <div>
+                        <h3 class="card-title fw-bold mb-0">Công suất các tòa nhà ký túc xá</h3>
+                        <p class="card-subtitle text-muted mb-0 fs-6">Theo dõi số lượng phòng và tỷ lệ lấp đầy giường theo từng tòa.</p>
+                    </div>
+                </div>
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "rooms" })" class="btn btn-sm btn-outline-primary">
+                    Quản lý tòa nhà <i class="ti ti-arrow-right ms-1"></i>
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <!-- Tòa A -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="badge bg-blue text-white me-1">TÒA A</span>
+                                    <strong class="fs-4 text-dark">Nhà A (Khu Nam)</strong>
+                                </div>
+                                <span class="badge bg-blue-lt fw-bold fs-5">10% lấp đầy</span>
+                            </div>
+                            <div class="progress progress-sm mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-primary" style="width: 10%" role="progressbar" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="row text-center g-2 pt-1 border-top">
+                                <div class="col-3">
+                                    <div class="text-muted fs-6">Phòng</div>
+                                    <div class="fw-bold fs-5 text-dark">2</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-muted fs-6">Tổng chỗ</div>
+                                    <div class="fw-bold fs-5 text-dark">10</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-muted fs-6">Đang ở</div>
+                                    <div class="fw-bold fs-5 text-primary">1</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-muted fs-6">Còn trống</div>
+                                    <div class="fw-bold fs-5 text-success">9</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tòa B -->
+                    <div class="col-md-6">
+                        <div class="p-3 border rounded bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="badge bg-teal text-white me-1">TÒA B</span>
+                                    <strong class="fs-4 text-dark">Nhà B (Khu Nữ)</strong>
+                                </div>
+                                <span class="badge bg-secondary-lt fw-bold fs-5">0% lấp đầy</span>
+                            </div>
+                            <div class="progress progress-sm mb-3" style="height: 8px;">
+                                <div class="progress-bar bg-teal" style="width: 0%" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                            <div class="row text-center g-2 pt-1 border-top">
+                                <div class="col-3">
+                                    <div class="text-muted fs-6">Phòng</div>
+                                    <div class="fw-bold fs-5 text-dark">1</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-muted fs-6">Tổng chỗ</div>
+                                    <div class="fw-bold fs-5 text-dark">4</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-muted fs-6">Đang ở</div>
+                                    <div class="fw-bold fs-5 text-muted">0</div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="text-muted fs-6">Còn trống</div>
+                                    <div class="fw-bold fs-5 text-success">4</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Quick Operations & Notes (4 cols) -->
+    <div class="col-lg-4">
+        <!-- Quick Operations Card (Clean replacement for screenshot 3) -->
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex align-items-center">
+                    <i class="ti ti-bolt text-warning me-2 fs-2"></i>
+                    <h3 class="card-title fw-bold mb-0">Thao tác nghiệp vụ nhanh</h3>
+                </div>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "rooms" })#create-form" class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                    <span class="avatar avatar-sm bg-primary-lt text-primary rounded me-3">
+                        <i class="ti ti-plus fs-2"></i>
+                    </span>
+                    <div class="flex-fill">
+                        <div class="fw-bold text-dark fs-5">Thêm phòng / chỗ ở mới</div>
+                        <div class="text-muted fs-6">Thiết lập mã phòng, tòa, sức chứa</div>
+                    </div>
+                    <i class="ti ti-chevron-right text-muted"></i>
+                </a>
+
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "payments" })#create-form" class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                    <span class="avatar avatar-sm bg-success-lt text-success rounded me-3">
+                        <i class="ti ti-receipt fs-2"></i>
+                    </span>
+                    <div class="flex-fill">
+                        <div class="fw-bold text-dark fs-5">Lập hóa đơn định kỳ</div>
+                        <div class="text-muted fs-6">Tính tiền phòng và dịch vụ tháng</div>
+                    </div>
+                    <i class="ti ti-chevron-right text-muted"></i>
+                </a>
+
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "utilities" })#create-form" class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                    <span class="avatar avatar-sm bg-warning-lt text-warning rounded me-3">
+                        <i class="ti ti-bolt fs-2"></i>
+                    </span>
+                    <div class="flex-fill">
+                        <div class="fw-bold text-dark fs-5">Ghi chỉ số điện nước</div>
+                        <div class="text-muted fs-6">Tự động phân bổ sản lượng theo phòng</div>
+                    </div>
+                    <i class="ti ti-chevron-right text-muted"></i>
+                </a>
+
+                <a href="@Url.Action("Workspace", "Dormitory", new { section = "violations" })#create-form" class="list-group-item list-group-item-action d-flex align-items-center py-3">
+                    <span class="avatar avatar-sm bg-danger-lt text-danger rounded me-3">
+                        <i class="ti ti-alert-triangle fs-2"></i>
+                    </span>
+                    <div class="flex-fill">
+                        <div class="fw-bold text-dark fs-5">Lập biên bản vi phạm</div>
+                        <div class="text-muted fs-6">Gắn khoản phạt và thông báo nội bộ</div>
+                    </div>
+                    <i class="ti ti-chevron-right text-muted"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Dorm Support & Guideline Card -->
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3">
+                <div class="d-flex align-items-center">
+                    <i class="ti ti-info-circle text-info me-2 fs-2"></i>
+                    <h3 class="card-title fw-bold mb-0">Hỗ trợ & Thông tin KTX</h3>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="text-muted fs-6 mb-1">Hotline Ban Quản lý (24/7):</div>
+                    <div class="fw-bold fs-4 text-primary"><i class="ti ti-phone me-1"></i>(024) 3869 1234</div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted fs-6 mb-1">Thời gian mở cổng nội trú:</div>
+                    <div class="fw-medium text-dark"><i class="ti ti-clock me-1"></i>05:30 — 23:00 hàng ngày</div>
+                </div>
+                <div class="p-2 rounded bg-light border text-muted fs-6">
+                    <i class="ti ti-bulb text-warning me-1"></i>
+                    Sinh viên cần báo sự cố điện, nước hoặc thiết bị hư hỏng tại mục <strong>Điều phối sửa chữa</strong>.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
