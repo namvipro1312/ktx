@@ -420,12 +420,55 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 if (studentId is not null) cont = cont.Where(x => x.student_id == studentId);
                 if (station == "contracts") cont = cont.Where(x => x.status == "active");
                 var contracts = await cont.OrderByDescending(x => x.created_at).ToListAsync();
+
+                var totalCont = contracts.Count;
+                var activeCont = contracts.Count(x => x.status == "active");
+                var draftCont = contracts.Count(x => x.status == "draft");
+                var expiredCont = contracts.Count(x => x.status == "expired" || x.status == "terminated");
+
                 model = Build("contracts", IsStudent ? "Hợp đồng lưu trú của bạn" : "Hợp đồng lưu trú", IsStudent ? "Xem văn bản hợp đồng nội trú, biểu phí phòng và thời hạn lưu trú thực tế." : "Ngày hiệu lực, vị trí được phân và trạng thái nhận/trả phòng.", ["Mã hợp đồng", "Sinh viên", "Vị trí", "Thời hạn", "Tiền phòng / cọc", "Cọc đã xác nhận", "Trạng thái"], contracts.Select(x =>
                 {
                     var depositNet = x.deposit_transactions.Where(d => d.status == "completed").Sum(d => d.transaction_type == "collected" ? d.amount : -d.amount);
-                    List<RowActionViewModel> actions = IsStudent ? [] : x.status == "draft" ? depositNet >= x.deposit_amount ? [new RowActionViewModel("Ghi nhận ký", "sign", true), new RowActionViewModel("Hủy hợp đồng", "cancel-contract")] : [new RowActionViewModel("Theo dõi tiền cọc", "open-deposits")] : x.status == "active" ? [new RowActionViewModel("Nhận phòng", "checkin", true), new RowActionViewModel("Trả phòng", "checkout")] : [];
+                    List<RowActionViewModel> actions = [];
+                    actions.Add(new RowActionViewModel("Xem / In HĐ", "view-contract", true));
+                    if (!IsStudent)
+                    {
+                        if (x.status == "draft")
+                        {
+                            if (depositNet >= x.deposit_amount)
+                                actions.Add(new RowActionViewModel("Ghi nhận ký", "sign", true));
+                            else
+                                actions.Add(new RowActionViewModel("Theo dõi tiền cọc", "open-deposits"));
+                            actions.Add(new RowActionViewModel("Hủy hợp đồng", "cancel-contract"));
+                        }
+                        else if (x.status == "active")
+                        {
+                            actions.Add(new RowActionViewModel("Gia hạn / Phụ lục", "contract-amend", true));
+                            actions.Add(new RowActionViewModel("Nhận phòng", "checkin", true));
+                            actions.Add(new RowActionViewModel("Trả phòng", "checkout"));
+                        }
+                    }
+                    else
+                    {
+                        if (x.status == "draft" && x.signed_at is null)
+                        {
+                            actions.Add(new RowActionViewModel("Ký hợp đồng", "student-sign", true));
+                        }
+                        else if (x.status == "active" && x.occupancy_record is null)
+                        {
+                            actions.Add(new RowActionViewModel("Nhận phòng", "student-checkin", true));
+                        }
+                    }
                     return Row(x.id, [x.contract_code, x.student.user.full_name, $"{x.bed.room.building.code} · {x.bed.room.room_number} · {x.bed.bed_number}", $"{x.start_date:dd/MM/yyyy} — {x.end_date:dd/MM/yyyy}", $"{x.monthly_price:N0} / {x.deposit_amount:N0} ₫", $"{depositNet:N0} ₫", StatusText(x.status)], x.status, actions);
                 }).ToList());
+
+                model.ContractStats = new ContractStatsViewModel
+                {
+                    TotalCount = totalCont,
+                    ActiveCount = activeCont,
+                    DraftCount = draftCont,
+                    ExpiredCount = expiredCont
+                };
                 break;
             case "services":
                 var services = await db.services.OrderBy(x => x.name).ToListAsync();
@@ -464,6 +507,16 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     paymentRows.Add(Row(x.invoice_id, [x.invoice_code, $"{x.period_start:MM/yyyy}", x.due_date.ToString("dd/MM/yyyy"), $"{x.total_amount ?? 0m:N0} ₫", $"{x.paid_amount ?? 0m:N0} ₫", $"{x.balance_amount ?? 0m:N0} ₫", pendingPayment ? "Chờ xác nhận" : StatusText(x.status)], (x.balance_amount ?? 0m) > 0m ? "pending" : "paid", actions));
                 }
                 model = Build("payments", IsStudent ? "Hóa đơn & Tiền phòng của bạn" : "Hóa đơn và thanh toán", IsStudent ? "Theo dõi các khoản tiền phòng, điện nước và dịch vụ nội trú cần thanh toán." : "Yêu cầu thanh toán được lưu ở trạng thái chờ; nhân viên kế toán xác nhận giao dịch thực nhận.", ["Mã hóa đơn", "Kỳ", "Hạn thanh toán", "Tổng tiền", "Đã thu", "Còn lại", "Trạng thái"], paymentRows, IsStudent ? null : "Lập hóa đơn", null, IsStudent ? [] : [new("contractId", "Hợp đồng", "select", true, await db.contracts.Where(x => x.status == "active").Include(x => x.student).ThenInclude(x => x.user).Select(x => new SelectOptionViewModel(x.id.ToString(), $"{x.contract_code} · {x.student.user.full_name}")).ToListAsync()), new("periodStart", "Kỳ từ", "date"), new("periodEnd", "Kỳ đến", "date"), new("dueDate", "Hạn thanh toán", "date")]);
+
+                model.PaymentStats = new PaymentStatsViewModel
+                {
+                    TotalInvoices = balancesList.Count,
+                    TotalBilled = balancesList.Sum(x => x.total_amount ?? 0m),
+                    TotalCollected = balancesList.Sum(x => x.paid_amount ?? 0m),
+                    TotalOutstanding = balancesList.Sum(x => x.balance_amount ?? 0m),
+                    PaidCount = balancesList.Count(x => (x.balance_amount ?? 0m) <= 0m),
+                    UnpaidCount = balancesList.Count(x => (x.balance_amount ?? 0m) > 0m)
+                };
                 break;
             case "deposits":
                 var depositQuery = db.deposit_transactions.Include(x => x.contract).ThenInclude(x => x.student).ThenInclude(x => x.user).AsQueryable();
@@ -510,14 +563,92 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
             case "reports":
                 if (!(IsAdmin || IsAccountant)) return Forbid();
                 var buildingsReport = await db.v_building_occupancies.OrderBy(x => x.building_code).ToListAsync();
-                model = Build("reports", "Thống kê vận hành", "Dữ liệu tổng hợp trực tiếp từ các view SQL Server.", ["Tòa", "Phòng", "Sức chứa", "Đang ở / còn trống", "Tình trạng"], buildingsReport.Select(x => Row(x.building_id, [x.building_code + " · " + x.building_name, x.room_count?.ToString() ?? "0", x.nominal_capacity?.ToString() ?? "0", $"{x.current_occupants ?? 0} / {x.available_slots ?? 0}", "Tổng hợp từ hợp đồng hiệu lực"], "active")).ToList());
-                var monthly = await db.v_monthly_invoice_summaries.OrderByDescending(x => x.billing_month).Take(12).ToListAsync();
-                model.Rows.AddRange(monthly.Select((x, i) => Row(-i - 1, ["Thu chi · " + (x.billing_month?.ToString("MM/yyyy") ?? "—"), x.invoice_count?.ToString() ?? "0", "—", "—", $"Đã lập {x.billed_amount ?? 0m:N0} ₫ · Đã thu {x.collected_amount ?? 0m:N0} ₫ · Còn {x.outstanding_amount ?? 0m:N0} ₫"], "report")));
+                var monthly = await db.v_monthly_invoice_summaries.OrderBy(x => x.billing_month).Take(12).ToListAsync();
+                var repairSummary = await db.v_repair_summaries.ToListAsync();
+
+                var allRoomsCount = await db.rooms.CountAsync();
+                var allBedsCount = await db.beds.CountAsync();
+                var occBedsCount = await db.beds.CountAsync(b => b.status == "occupied");
+                var availBedsCount = await db.beds.CountAsync(b => b.status == "available");
+                var occRate = allBedsCount > 0 ? Math.Round((double)occBedsCount / allBedsCount * 100, 1) : 0;
+
+                var sumBilled = monthly.Sum(m => m.billed_amount ?? 0m);
+                var sumCollected = monthly.Sum(m => m.collected_amount ?? 0m);
+                var sumOutstanding = monthly.Sum(m => m.outstanding_amount ?? 0m);
+
+                var totalRepairsCount = await db.repair_requests.CountAsync();
+                var resolvedRepairsCount = await db.repair_requests.CountAsync(r => r.status == "completed");
+                var repairRate = totalRepairsCount > 0 ? Math.Round((double)resolvedRepairsCount / totalRepairsCount * 100, 1) : 0;
+
+                var allRegNotes = await db.room_registrations.Select(r => r.note).ToListAsync();
+                var priorityStats = allRegNotes
+                    .Select(n => CalculatePriorityScore(n).PriorityTag)
+                    .GroupBy(tag => tag)
+                    .Select(g => new PriorityStat { PriorityTag = g.Key, Count = g.Count() })
+                    .OrderByDescending(x => x.Count)
+                    .ToList();
+
+                var buildingStatsList = buildingsReport.Select(b => new BuildingOccupancyStat
+                {
+                    BuildingName = b.building_name,
+                    BuildingCode = b.building_code,
+                    TotalRooms = b.room_count ?? 0,
+                    Capacity = b.nominal_capacity ?? 0,
+                    Occupants = b.current_occupants ?? 0,
+                    Available = b.available_slots ?? 0,
+                    Rate = (b.nominal_capacity ?? 0) > 0 ? Math.Round((double)(b.current_occupants ?? 0) / (b.nominal_capacity ?? 1) * 100, 1) : 0
+                }).ToList();
+
+                var monthlyStatsList = monthly.Select(m => new MonthlyFinanceStat
+                {
+                    MonthLabel = m.billing_month?.ToString("MM/yyyy") ?? "—",
+                    Billed = m.billed_amount ?? 0m,
+                    Collected = m.collected_amount ?? 0m,
+                    Outstanding = m.outstanding_amount ?? 0m
+                }).ToList();
+
+                var repairStatsList = repairSummary
+                    .GroupBy(r => r.status)
+                    .Select(g => new RepairTypeStat { Status = StatusText(g.Key), Count = g.Sum(x => x.request_count ?? 0) })
+                    .ToList();
+
+                model = Build("reports", "Trung tâm Thống kê & Báo cáo KTX", "Dữ liệu tổng hợp từ các view và số liệu thực tế trong hệ thống.", ["Tòa", "Phòng", "Sức chứa", "Đang ở / còn trống", "Tình trạng"], buildingsReport.Select(x => Row(x.building_id, [x.building_code + " · " + x.building_name, x.room_count?.ToString() ?? "0", x.nominal_capacity?.ToString() ?? "0", $"{x.current_occupants ?? 0} / {x.available_slots ?? 0}", "Tổng hợp từ hợp đồng hiệu lực"], "active")).ToList());
+                model.Rows.AddRange(monthly.OrderByDescending(x => x.billing_month).Select((x, i) => Row(-i - 1, ["Thu chi · " + (x.billing_month?.ToString("MM/yyyy") ?? "—"), x.invoice_count?.ToString() ?? "0", "—", "—", $"Đã lập {x.billed_amount ?? 0m:N0} ₫ · Đã thu {x.collected_amount ?? 0m:N0} ₫ · Còn {x.outstanding_amount ?? 0m:N0} ₫"], "report")));
+
+                model.Analytics = new AnalyticsReportViewModel
+                {
+                    TotalRooms = allRoomsCount,
+                    TotalBeds = allBedsCount,
+                    OccupiedBeds = occBedsCount,
+                    AvailableBeds = availBedsCount,
+                    OccupancyRate = occRate,
+                    TotalBilled = sumBilled,
+                    TotalCollected = sumCollected,
+                    TotalOutstanding = sumOutstanding,
+                    TotalRepairs = totalRepairsCount,
+                    ResolvedRepairs = resolvedRepairsCount,
+                    RepairResolutionRate = repairRate,
+                    BuildingStats = buildingStatsList,
+                    MonthlyStats = monthlyStatsList,
+                    PriorityStats = priorityStats,
+                    RepairStats = repairStatsList
+                };
                 break;
             case "users":
                 if (!IsSystemAdmin) return Forbid();
                 var users = await db.users.Include(x => x.user_roles).ThenInclude(x => x.role).OrderBy(x => x.username).ToListAsync();
-                model = Build("users", "Tài khoản và phân quyền", "Tài khoản được gắn vai trò từ ma trận quyền của cơ sở dữ liệu.", ["Tên đăng nhập", "Họ tên", "Email", "Vai trò", "Lần đăng nhập", "Trạng thái"], users.Select(x => Row(x.id, [x.username, x.full_name, x.email ?? "—", string.Join(", ", x.user_roles.Select(r => r.role.name)), x.last_login_at?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập", x.is_active ? "Đang hoạt động" : "Đã khóa"], x.is_active ? "active" : "inactive", x.id == UserId ? [] : [new RowActionViewModel(x.is_active ? "Khóa" : "Mở khóa", "user-toggle")])).ToList(), "Tạo tài khoản", "Tài khoản demo đã có mật khẩu mẫu; đổi mật khẩu trước khi triển khai thật.", [new("username", "Tên đăng nhập"), new("fullName", "Họ tên"), new("email", "Email", "email", false), new("password", "Mật khẩu", "password"), new("roleId", "Vai trò", "select", true, await db.roles.Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync())]);
+                var allDbRoles = await db.roles.OrderBy(r => r.name).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync();
+                model = Build("users", "Tài khoản và phân quyền", "Tài khoản được gắn vai trò từ ma trận quyền của cơ sở dữ liệu.", ["Tên đăng nhập", "Họ tên", "Email", "Vai trò", "Lần đăng nhập", "Trạng thái"], users.Select(x => {
+                    var actions = new List<RowActionViewModel>();
+                    if (x.id != UserId)
+                    {
+                        actions.Add(new RowActionViewModel("Phân quyền", "user-edit-role", true));
+                        actions.Add(new RowActionViewModel("Đổi MK", "user-reset-pwd", false));
+                        actions.Add(new RowActionViewModel(x.is_active ? "Khóa" : "Mở khóa", "user-toggle"));
+                    }
+                    return Row(x.id, [x.username, x.full_name, x.email ?? "—", string.Join(", ", x.user_roles.Select(r => r.role.name)), x.last_login_at?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập", x.is_active ? "Đang hoạt động" : "Đã khóa"], x.is_active ? "active" : "inactive", actions);
+                }).ToList(), "Tạo tài khoản", "Tài khoản demo đã có mật khẩu mẫu; đổi mật khẩu trước khi triển khai thật.", [new("username", "Tên đăng nhập"), new("fullName", "Họ tên"), new("email", "Email", "email", false), new("password", "Mật khẩu", "password"), new("roleId", "Vai trò", "select", true, allDbRoles)]);
+                model.SystemRoles = allDbRoles;
                 break;
             default:
                 return RedirectToAction(nameof(Workspace), new { section = "rooms" });
@@ -799,9 +930,10 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
         section = section.ToLowerInvariant();
                 if (operation == "view-contract") return RedirectToAction(nameof(ContractView), new { id });
         if (operation is ("acknowledge" or "subscribe" or "unsubscribe" or "payment-request" or "guest-cancel" or "student-sign" or "student-checkin") && !IsStudent) return Forbid();
-        if (operation == "user-toggle" && !IsSystemAdmin) return Forbid();
+        if (operation is ("user-toggle" or "user-edit-role" or "user-reset-pwd") && !IsSystemAdmin) return Forbid();
+        if (operation is ("room-edit" or "contract-amend") && !IsAdmin) return Forbid();
         if (operation == "open-deposits") return RedirectToAction(nameof(Workspace), new { section = "deposits" });
-        if (IsStudent && operation is ("approve" or "reject" or "request-changes" or "waitlist" or "revoke-expired" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "room-close" or "payment-confirm" or "deposit-confirm" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "guest-approve" or "guest-reject" or "guest-arrive" or "guest-depart" or "asset-check" or "meter-toggle" or "violation-review" or "violation-resolve" or "violation-invoice" or "refund-complete" or "refund-reject" or "auto-allocate-all")) return Forbid();
+        if (IsStudent && operation is ("approve" or "reject" or "request-changes" or "waitlist" or "revoke-expired" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "room-close" or "payment-confirm" or "deposit-confirm" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "guest-approve" or "guest-reject" or "guest-arrive" or "guest-depart" or "asset-check" or "meter-toggle" or "violation-review" or "violation-resolve" or "violation-invoice" or "refund-complete" or "refund-reject" or "auto-allocate-all" or "room-edit" or "contract-amend" or "user-edit-role" or "user-reset-pwd")) return Forbid();
         if (operation.StartsWith("guest-") && operation != "guest-cancel" && !IsAdmin) return Forbid();
         if (operation == "asset-check" && !(IsAdmin || IsMaintenance)) return Forbid();
         if (operation == "meter-toggle" && !IsAdmin) return Forbid();
@@ -1359,6 +1491,74 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 case "notification-read":
                     var notice = await db.notifications.SingleAsync(x => x.id == id && x.user_id == UserId);
                     notice.read_at ??= DateTime.Now;
+                    break;
+                case "room-edit":
+                    var editRoom = await db.rooms.Include(r => r.beds).SingleAsync(r => r.id == id);
+                    if (short.TryParse(Request.Form["capacity"], out var newCap) && newCap >= 1 && newCap <= 16)
+                    {
+                        if (newCap > editRoom.capacity)
+                        {
+                            for (int b = editRoom.capacity + 1; b <= newCap; b++)
+                            {
+                                db.beds.Add(new bed { room_id = editRoom.id, bed_number = $"G{b:02}", status = "available" });
+                            }
+                        }
+                        else if (newCap < editRoom.capacity)
+                        {
+                            var bedsToRemove = editRoom.beds.OrderByDescending(b => b.bed_number).Take(editRoom.capacity - newCap).ToList();
+                            foreach (var b in bedsToRemove)
+                            {
+                                if (b.status == "occupied") throw new InvalidOperationException($"Không thể giảm sức chứa vì giường {b.bed_number} đang có người ở.");
+                                db.beds.Remove(b);
+                            }
+                        }
+                        editRoom.capacity = newCap;
+                    }
+                    if (decimal.TryParse(Request.Form["price"], out var newPrice) && newPrice > 0) editRoom.monthly_price = newPrice;
+                    if (!string.IsNullOrWhiteSpace(Request.Form["roomType"])) editRoom.room_type = Request.Form["roomType"].ToString().Trim();
+                    editRoom.updated_at = DateTime.Now;
+                    break;
+                case "contract-amend":
+                    var targetCont = await db.contracts.SingleAsync(c => c.id == id);
+                    if (DateOnly.TryParse(Request.Form["newEndDate"], out var newEnd))
+                    {
+                        if (newEnd <= targetCont.end_date) throw new InvalidOperationException("Ngày kết thúc mới phải sau ngày kết thúc hiện tại.");
+                        var oldEnd = targetCont.end_date;
+                        targetCont.end_date = newEnd;
+                        var amendment = new contract_amendment
+                        {
+                            contract_id = targetCont.id,
+                            amendment_code = "PL-" + DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString("N")[..4].ToUpperInvariant(),
+                            amendment_type = "extension",
+                            old_values = $"Hạn cũ: {oldEnd:dd/MM/yyyy}",
+                            new_values = $"Hạn mới: {newEnd:dd/MM/yyyy}",
+                            reason = Request.Form["reason"].ToString() ?? "Gia hạn thời gian lưu trú",
+                            effective_date = DateOnly.FromDateTime(DateTime.Today),
+                            created_by_user_id = UserId,
+                            signed_at = DateTime.Now,
+                            created_at = DateTime.Now
+                        };
+                        db.contract_amendments.Add(amendment);
+                    }
+                    break;
+                case "user-edit-role":
+                    if (!IsSystemAdmin) return Forbid();
+                    var uRole = await db.user_roles.FirstOrDefaultAsync(ur => ur.user_id == id);
+                    if (long.TryParse(Request.Form["roleId"], out var newRoleId))
+                    {
+                        if (uRole != null)
+                        {
+                            db.user_roles.Remove(uRole);
+                        }
+                        db.user_roles.Add(new user_role { user_id = id, role_id = newRoleId, assigned_at = DateTime.Now });
+                    }
+                    break;
+                case "user-reset-pwd":
+                    if (!IsSystemAdmin) return Forbid();
+                    var pwdUser = await db.users.SingleAsync(u => u.id == id);
+                    var newPwd = string.IsNullOrWhiteSpace(Request.Form["newPassword"]) ? "Demo@123" : Request.Form["newPassword"].ToString().Trim();
+                    pwdUser.password_hash = hasher.HashPassword(pwdUser, newPwd);
+                    pwdUser.updated_at = DateTime.Now;
                     break;
                 default: throw new InvalidOperationException("Thao tác không hợp lệ.");
             }

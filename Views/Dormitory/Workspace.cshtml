@@ -249,6 +249,10 @@
                                                 <div class="mt-auto pt-1 border-top border-secondary-subtle">
                                                     @if (isAdmin)
                                                     {
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 mb-1 py-1 fs-6" 
+                                                                onclick="openEditRoomModal('@room.Id', '@room.RoomNumber', '@room.Capacity', '@Convert.ToInt64(room.MonthlyPrice)', '@room.RoomType')">
+                                                            <i class="ti ti-pencil me-1"></i> Sửa cấu hình phòng
+                                                        </button>
                                                         <!-- 1 hàng chia thành các ô: mỗi ô 1 icon Đóng, Mở, Bảo trì -->
                                                         <div class="room-status-grid mt-2" role="group" aria-label="Thao tác trạng thái phòng">
                                                             <!-- Ô 1: ĐÓNG -->
@@ -1203,9 +1207,323 @@
 }
 
 <!-- ============================================== -->
-<!-- 3. GENERAL DATA TABLES (ALL OTHER SECTIONS)   -->
+<!-- 3. DEDICATED ANALYTICS & REPORTS (SP5)         -->
 <!-- ============================================== -->
-@if (!Model.RoomGroups.Any() && Model.Section != "registrations")
+@if (Model.Section == "reports" && Model.Analytics is not null)
+{
+    var a = Model.Analytics;
+    <!-- Executive KPI Row -->
+    <div class="row row-cards g-3 mb-4">
+        <!-- KPI 1: Occupancy -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="subheader text-uppercase fw-bold text-muted">Tỷ lệ lấp đầy KTX</div>
+                        <div class="ms-auto text-primary fw-bold fs-3">@a.OccupancyRate%</div>
+                    </div>
+                    <div class="h1 mb-2 fw-bold text-dark">@a.OccupiedBeds <small class="fs-4 text-muted fw-normal">/ @a.TotalBeds chỗ</small></div>
+                    <div class="progress progress-sm mb-2">
+                        <div class="progress-bar bg-primary" style="width: @a.OccupancyRate%" role="progressbar" aria-valuenow="@a.OccupancyRate" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <div class="text-muted fs-6"><i class="ti ti-door-enter text-success me-1"></i>Còn <strong>@a.AvailableBeds</strong> chỗ trống sẵn sàng tiếp nhận</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 2: Finance -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="subheader text-uppercase fw-bold text-muted">Dòng tiền & Thu phí</div>
+                        <div class="ms-auto badge bg-success-lt fw-bold">Thu đạt @(a.TotalBilled > 0 ? Math.Round((double)a.TotalCollected / (double)a.TotalBilled * 100, 1) : 0)%</div>
+                    </div>
+                    <div class="h1 mb-2 fw-bold text-success">@a.TotalCollected.ToString("N0") <small class="fs-5 text-muted fw-normal">₫</small></div>
+                    <div class="text-muted fs-6 mb-1">Tổng đã lập: <strong>@a.TotalBilled.ToString("N0") ₫</strong></div>
+                    <div class="text-danger fs-6"><i class="ti ti-alert-circle me-1"></i>Nợ đọng: <strong>@a.TotalOutstanding.ToString("N0") ₫</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 3: Facility Repairs -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="subheader text-uppercase fw-bold text-muted">Bảo trì & Cơ sở vật chất</div>
+                        <div class="ms-auto text-success fw-bold fs-3">@a.RepairResolutionRate%</div>
+                    </div>
+                    <div class="h1 mb-2 fw-bold text-dark">@a.ResolvedRepairs <small class="fs-4 text-muted fw-normal">/ @a.TotalRepairs sự cố</small></div>
+                    <div class="progress progress-sm mb-2">
+                        <div class="progress-bar bg-success" style="width: @a.RepairResolutionRate%" role="progressbar"></div>
+                    </div>
+                    <div class="text-muted fs-6"><i class="ti ti-check text-success me-1"></i>Tỷ lệ khắc phục sự cố thành công</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- KPI 4: Social Policies -->
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="subheader text-uppercase fw-bold text-muted">Chính sách & Ưu tiên</div>
+                        <div class="ms-auto badge bg-info-lt fw-bold">@a.PriorityStats.Count nhóm</div>
+                    </div>
+                    <div class="h1 mb-2 fw-bold text-primary">@a.PriorityStats.Sum(p => p.Count) <small class="fs-4 text-muted fw-normal">hồ sơ</small></div>
+                    <div class="text-muted fs-6 text-truncate mb-1"><i class="ti ti-award text-warning me-1"></i>Top: <strong>@(a.PriorityStats.FirstOrDefault()?.PriorityTag ?? "Chính sách xã hội")</strong></div>
+                    <div class="text-muted fs-6">Đã phân loại & chấm điểm tự động</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row row-cards g-3 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h3 class="card-title fw-bold mb-0"><i class="ti ti-building me-2 text-primary"></i>Hiện trạng Công suất Lưu trú theo từng Tòa nhà</h3>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="chartBuildingOccupancy"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h3 class="card-title fw-bold mb-0"><i class="ti ti-chart-pie me-2 text-info"></i>Cơ cấu Hồ sơ theo Diện Ưu tiên</h3>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="chartPriority"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row row-cards g-3 mb-4">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h3 class="card-title fw-bold mb-0"><i class="ti ti-chart-line me-2 text-success"></i>Dòng tiền & Doanh thu 12 Tháng gần nhất</h3>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="chartMonthlyFinance"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3">
+                    <h3 class="card-title fw-bold mb-0"><i class="ti ti-tool me-2 text-warning"></i>Phân bổ Xử lý Sửa chữa & Bảo trì</h3>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="chartRepairs"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Building Table -->
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white py-3 d-flex align-items-center">
+            <h3 class="card-title fw-bold mb-0"><i class="ti ti-table me-2 text-primary"></i>Bảng Tổng hợp Công suất & Tỷ lệ lấp đầy theo Tòa</h3>
+            <div class="ms-auto d-print-none">
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="window.print()"><i class="ti ti-printer me-1"></i>In bảng thống kê</button>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-vcenter card-table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Mã tòa</th>
+                        <th>Tên tòa nhà</th>
+                        <th class="text-center">Số phòng</th>
+                        <th class="text-center">Sức chứa</th>
+                        <th class="text-center">Đang ở</th>
+                        <th class="text-center">Còn trống</th>
+                        <th class="text-center">Tỷ lệ lấp đầy</th>
+                        <th>Đánh giá vận hành</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in a.BuildingStats)
+                    {
+                        var statusBadge = b.Rate >= 90 ? "bg-danger text-white" : b.Rate >= 70 ? "bg-warning text-white" : "bg-success text-white";
+                        var statusLabel = b.Rate >= 90 ? "Sắp hết chỗ" : b.Rate >= 70 ? "Tốt" : "Dồi dào chỗ";
+                        <tr>
+                            <td><strong class="badge bg-blue-lt fs-6">@b.BuildingCode</strong></td>
+                            <td class="fw-bold">@b.BuildingName</td>
+                            <td class="text-center">@b.TotalRooms</td>
+                            <td class="text-center fw-bold">@b.Capacity</td>
+                            <td class="text-center text-primary fw-bold">@b.Occupants</td>
+                            <td class="text-center text-success fw-bold">@b.Available</td>
+                            <td class="text-center">
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <div class="progress progress-xs w-100" style="max-width: 80px;">
+                                        <div class="progress-bar bg-primary" style="width: @b.Rate%"></div>
+                                    </div>
+                                    <span class="fw-bold">@b.Rate%</span>
+                                </div>
+                            </td>
+                            <td><span class="badge @statusBadge">@statusLabel</span></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<!-- Specialized Summary Cards for Contracts -->
+@if (Model.Section == "contracts" && Model.ContractStats is not null)
+{
+    <div class="row row-cards g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar"><i class="ti ti-file-text fs-2"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted fs-6">Tổng số hợp đồng</div>
+                            <div class="fw-bold fs-3 text-dark">@Model.ContractStats.TotalCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-success text-white avatar"><i class="ti ti-check fs-2"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted fs-6">Đang có hiệu lực</div>
+                            <div class="fw-bold fs-3 text-success">@Model.ContractStats.ActiveCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-warning text-white avatar"><i class="ti ti-clock-edit fs-2"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted fs-6">Bản nháp / Chờ cọc</div>
+                            <div class="fw-bold fs-3 text-warning">@Model.ContractStats.DraftCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-secondary text-white avatar"><i class="ti ti-calendar-off fs-2"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted fs-6">Đã kết thúc / Hết hạn</div>
+                            <div class="fw-bold fs-3 text-secondary">@Model.ContractStats.ExpiredCount</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Specialized Summary Cards for Payments -->
+@if (Model.Section == "payments" && Model.PaymentStats is not null)
+{
+    <div class="row row-cards g-3 mb-4">
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-blue text-white avatar"><i class="ti ti-receipt-2 fs-2"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted fs-6">Tổng số hóa đơn</div>
+                            <div class="fw-bold fs-3 text-dark">@Model.PaymentStats.TotalInvoices</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-primary text-white avatar"><i class="ti ti-calculator fs-2"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted fs-6">Tổng tiền đã phát hành</div>
+                            <div class="fw-bold fs-3 text-primary">@Model.PaymentStats.TotalBilled.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-success text-white avatar"><i class="ti ti-cash fs-2"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted fs-6">Đã thu qua ngân hàng / tiền mặt</div>
+                            <div class="fw-bold fs-3 text-success">@Model.PaymentStats.TotalCollected.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+            <div class="card card-sm shadow-sm border-0">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-auto">
+                            <span class="bg-danger text-white avatar"><i class="ti ti-alert-triangle fs-2"></i></span>
+                        </div>
+                        <div class="col">
+                            <div class="text-muted fs-6">Nợ đọng cần thu hồi</div>
+                            <div class="fw-bold fs-3 text-danger">@Model.PaymentStats.TotalOutstanding.ToString("N0") ₫</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ============================================== -->
+<!-- 4. GENERAL DATA TABLES (ALL OTHER SECTIONS)   -->
+<!-- ============================================== -->
+@if (!Model.RoomGroups.Any() && Model.Section != "registrations" && Model.Section != "reports")
 {
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white py-3">
@@ -1300,6 +1618,10 @@
                                                         onclick="openVietQRModal('@invCode', '@remaining', 'KTX @invCode')">
                                                     <i class="ti ti-qrcode me-1"></i> Quét VietQR
                                                 </button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                        onclick="openReceiptModal('@invCode', '@(row.Cells.Count > 1 ? row.Cells[1] : "")', '@(row.Cells.Count > 3 ? row.Cells[3] : "")', '@(row.Cells.Count > 4 ? row.Cells[4] : "")', '@(row.Cells.Count > 5 ? row.Cells[5] : "")', '@(row.Cells.Count > 6 ? row.Cells[6] : "")')">
+                                                    <i class="ti ti-receipt me-1"></i> Biên lai
+                                                </button>
                                             }
                                             else if (Model.Section == "deposits" && row.Cells.Count >= 5)
                                             {
@@ -1313,14 +1635,35 @@
                                             }
                                             @foreach (var action in row.Actions)
                                             {
-                                                <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
-                                                    <input type="hidden" name="section" value="@Model.Section" />
-                                                    <input type="hidden" name="id" value="@row.Id" />
-                                                    <input type="hidden" name="operation" value="@action.Operation" />
-                                                    <button class="btn btn-sm @(action.Primary ? "btn-primary" : "btn-outline-secondary")" type="submit">
-                                                        @action.Label
+                                                if (action.Operation == "contract-amend")
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="openAmendModal('@row.Id', '@row.Cells[0]', '@row.Cells[1]')">
+                                                        <i class="ti ti-calendar-plus me-1"></i> @action.Label
                                                     </button>
-                                                </form>
+                                                }
+                                                else if (action.Operation == "user-edit-role")
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="openUserRoleModal('@row.Id', '@row.Cells[0]', '@row.Cells[1]', '@row.Cells[3]')">
+                                                        <i class="ti ti-shield-check me-1"></i> @action.Label
+                                                    </button>
+                                                }
+                                                else if (action.Operation == "user-reset-pwd")
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="openResetPwdModal('@row.Id', '@row.Cells[0]')">
+                                                        <i class="ti ti-key me-1"></i> @action.Label
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
+                                                        <input type="hidden" name="section" value="@Model.Section" />
+                                                        <input type="hidden" name="id" value="@row.Id" />
+                                                        <input type="hidden" name="operation" value="@action.Operation" />
+                                                        <button class="btn btn-sm @(action.Primary ? "btn-primary" : "btn-outline-secondary")" type="submit">
+                                                            @action.Label
+                                                        </button>
+                                                    </form>
+                                                }
                                             }
                                         </div>
                                     </td>
@@ -1804,6 +2147,192 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
 </div>
 
 <!-- ==========================================================================
+     MODAL: CHỈNH SỬA PHÒNG (EDIT ROOM)
+     ========================================================================== -->
+<div class="modal fade" id="editRoomModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form asp-controller="Dormitory" asp-action="Process" method="post" class="modal-content">
+            <input type="hidden" name="section" value="rooms" />
+            <input type="hidden" name="id" id="editRoomId" />
+            <input type="hidden" name="operation" value="room-edit" />
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="ti ti-edit me-2 text-primary"></i>Chỉnh sửa phòng <span id="editRoomNumberTitle" class="badge bg-primary-lt"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Loại phòng</label>
+                    <input type="text" name="roomType" id="editRoomType" class="form-control" placeholder="Ví dụ: 4 người, Máy lạnh..." required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Sức chứa (số giường)</label>
+                    <input type="number" name="capacity" id="editRoomCapacity" class="form-control" min="1" max="16" required />
+                    <div class="form-text text-muted">Nếu tăng sức chứa, hệ thống tự động sinh thêm giường trống.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Giá thuê mỗi tháng (₫)</label>
+                    <input type="number" name="price" id="editRoomPrice" class="form-control" step="10000" min="0" required />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-primary"><i class="ti ti-device-floppy me-1"></i>Lưu thay đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: GIA HẠN / PHỤ LỤC HỢP ĐỒNG (CONTRACT AMENDMENT)
+     ========================================================================== -->
+<div class="modal fade" id="amendContractModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form asp-controller="Dormitory" asp-action="Process" method="post" class="modal-content">
+            <input type="hidden" name="section" value="contracts" />
+            <input type="hidden" name="id" id="amendContractId" />
+            <input type="hidden" name="operation" value="contract-amend" />
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="ti ti-calendar-plus me-2 text-info"></i>Lập Phụ lục Gia hạn Hợp đồng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info py-2 mb-3">
+                    Hợp đồng: <strong id="amendContractCode"></strong> · Sinh viên: <strong id="amendContractStudent"></strong>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Ngày kết thúc mới</label>
+                    <input type="date" name="newEndDate" class="form-control" required />
+                    <div class="form-text text-muted">Ngày kết thúc mới phải sau hạn hợp đồng hiện tại.</div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Lý do điều chỉnh / gia hạn</label>
+                    <textarea name="reason" class="form-control" rows="2" placeholder="Gia hạn học kỳ tiếp theo theo đơn sinh viên..." required></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-info"><i class="ti ti-check me-1"></i>Xác nhận Gia hạn</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: PHÂN QUYỀN TÀI KHOẢN (USER ROLE ASSIGNMENT)
+     ========================================================================== -->
+<div class="modal fade" id="userRoleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form asp-controller="Dormitory" asp-action="Process" method="post" class="modal-content">
+            <input type="hidden" name="section" value="users" />
+            <input type="hidden" name="id" id="userRoleId" />
+            <input type="hidden" name="operation" value="user-edit-role" />
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="ti ti-shield-check me-2 text-warning"></i>Phân quyền tài khoản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tên đăng nhập</label>
+                    <input type="text" id="userRoleUsername" class="form-control" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Họ tên người dùng</label>
+                    <input type="text" id="userRoleFullName" class="form-control" readonly />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Vai trò hệ thống</label>
+                    <select name="roleId" id="userRoleSelect" class="form-select" required>
+                        @foreach (var r in Model.SystemRoles)
+                        {
+                            <option value="@r.Value">@r.Label</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-warning"><i class="ti ti-check me-1"></i>Cập nhật vai trò</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: ĐẶT LẠI MẬT KHẨU (PASSWORD RESET)
+     ========================================================================== -->
+<div class="modal fade" id="resetPwdModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <form asp-controller="Dormitory" asp-action="Process" method="post" class="modal-content">
+            <input type="hidden" name="section" value="users" />
+            <input type="hidden" name="id" id="resetPwdUserId" />
+            <input type="hidden" name="operation" value="user-reset-pwd" />
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="ti ti-key me-2 text-danger"></i>Đặt lại mật khẩu người dùng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning py-2 mb-3">
+                    Đặt lại mật khẩu cho tài khoản: <strong id="resetPwdUsername"></strong>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mật khẩu mới</label>
+                    <input type="password" name="newPassword" class="form-control" placeholder="Mặc định: Demo@123 nếu để trống" />
+                    <div class="form-text text-muted">Để trống nếu muốn reset về mật khẩu mặc định: <code>Demo@123</code>.</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="submit" class="btn btn-danger"><i class="ti ti-lock-open me-1"></i>Xác nhận đặt lại</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ==========================================================================
+     MODAL: BIÊN LAI ĐIỆN TỬ (E-RECEIPT)
+     ========================================================================== -->
+<div class="modal fade" id="eReceiptModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title fw-bold"><i class="ti ti-receipt me-2"></i>BIÊN LAI ĐIỆN TỬ KÝ TÚC XÁ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="eReceiptPrintArea">
+                <div class="text-center mb-3">
+                    <h3 class="fw-bold text-dark mb-0">BAN QUẢN LÝ KÝ TÚC XÁ</h3>
+                    <p class="text-muted fs-6 mb-1">Cổng thanh toán tự động & Đối soát ngân hàng</p>
+                    <span class="badge bg-success-lt fs-6 px-3 py-1">ĐÃ XÁC THỰC THANH TOÁN THÀNH CÔNG</span>
+                </div>
+                <hr class="my-3" />
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><span class="text-muted">Mã hóa đơn:</span></div>
+                    <div class="col-6 text-end"><strong id="rcptInvCode"></strong></div>
+                    <div class="col-6"><span class="text-muted">Kỳ thu phí:</span></div>
+                    <div class="col-6 text-end"><span id="rcptPeriod"></span></div>
+                    <div class="col-6"><span class="text-muted">Tổng tiền hóa đơn:</span></div>
+                    <div class="col-6 text-end"><span id="rcptTotal"></span></div>
+                    <div class="col-6"><span class="text-muted">Số tiền đã thu:</span></div>
+                    <div class="col-6 text-end"><strong class="text-success fs-5" id="rcptPaid"></strong></div>
+                    <div class="col-6"><span class="text-muted">Nợ đọng còn lại:</span></div>
+                    <div class="col-6 text-end"><span class="text-danger" id="rcptBalance"></span></div>
+                    <div class="col-6"><span class="text-muted">Thời điểm xuất:</span></div>
+                    <div class="col-6 text-end"><span id="rcptDate"></span></div>
+                </div>
+                <div class="border rounded p-3 bg-light text-center">
+                    <p class="text-muted fs-6 mb-1"><i class="ti ti-shield-check text-success me-1"></i>Hóa đơn đã được ký điện tử và lưu trữ trên hệ thống QLKTX.</p>
+                    <small class="text-muted">Tra cứu tại cổng sinh viên trực tuyến</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="window.print()"><i class="ti ti-printer me-1"></i>In biên lai</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================================================
      GLOBAL SCRIPT HELPERS (2D BLUEPRINT & VIETQR)
      ========================================================================== -->
 <script>
@@ -1935,5 +2464,147 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
         var modalEl = document.getElementById('vietQrPaymentModal');
         var modal = bootstrap.Modal.getInstance(modalEl);
         if (modal) modal.hide();
+    }
+
+    function openEditRoomModal(id, roomNumber, capacity, price, roomType) {
+        document.getElementById('editRoomId').value = id;
+        document.getElementById('editRoomNumberTitle').textContent = roomNumber;
+        document.getElementById('editRoomCapacity').value = capacity;
+        document.getElementById('editRoomPrice').value = price;
+        document.getElementById('editRoomType').value = roomType;
+        var modal = new bootstrap.Modal(document.getElementById('editRoomModal'));
+        modal.show();
+    }
+
+    function openAmendModal(id, contractCode, studentName) {
+        document.getElementById('amendContractId').value = id;
+        document.getElementById('amendContractCode').textContent = contractCode;
+        document.getElementById('amendContractStudent').textContent = studentName;
+        var modal = new bootstrap.Modal(document.getElementById('amendContractModal'));
+        modal.show();
+    }
+
+    function openUserRoleModal(id, username, fullName, currentRole) {
+        document.getElementById('userRoleId').value = id;
+        document.getElementById('userRoleUsername').value = username;
+        document.getElementById('userRoleFullName').value = fullName;
+        var modal = new bootstrap.Modal(document.getElementById('userRoleModal'));
+        modal.show();
+    }
+
+    function openResetPwdModal(id, username) {
+        document.getElementById('resetPwdUserId').value = id;
+        document.getElementById('resetPwdUsername').textContent = username;
+        var modal = new bootstrap.Modal(document.getElementById('resetPwdModal'));
+        modal.show();
+    }
+
+    function openReceiptModal(invCode, period, total, paid, balance, status) {
+        document.getElementById('rcptInvCode').textContent = invCode;
+        document.getElementById('rcptPeriod').textContent = period;
+        document.getElementById('rcptTotal').textContent = total;
+        document.getElementById('rcptPaid').textContent = paid;
+        document.getElementById('rcptBalance').textContent = balance;
+        document.getElementById('rcptDate').textContent = new Date().toLocaleString('vi-VN');
+        var modal = new bootstrap.Modal(document.getElementById('eReceiptModal'));
+        modal.show();
+    }
+
+    @if (Model.Section == "reports" && Model.Analytics is not null)
+    {
+        <text>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Chart 1: Building Occupancy
+            var buildingLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.BuildingStats.Select(b => b.BuildingCode + " (" + b.BuildingName + ")")));
+            var buildingOcc = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.BuildingStats.Select(b => b.Occupants)));
+            var buildingAvail = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.BuildingStats.Select(b => b.Available)));
+
+            var ctxB = document.getElementById('chartBuildingOccupancy');
+            if (ctxB) {
+                new Chart(ctxB, {
+                    type: 'bar',
+                    data: {
+                        labels: buildingLabels,
+                        datasets: [
+                            { label: 'Đang ở (chỗ)', data: buildingOcc, backgroundColor: '#206bc4' },
+                            { label: 'Còn trống (chỗ)', data: buildingAvail, backgroundColor: '#2fb344' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: { stacked: true },
+                            y: { stacked: true, beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            // Chart 2: Monthly Finance
+            var monthLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.MonthlyStats.Select(m => m.MonthLabel)));
+            var monthBilled = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.MonthlyStats.Select(m => m.Billed)));
+            var monthCollected = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.MonthlyStats.Select(m => m.Collected)));
+            var monthOutstanding = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.MonthlyStats.Select(m => m.Outstanding)));
+
+            var ctxM = document.getElementById('chartMonthlyFinance');
+            if (ctxM) {
+                new Chart(ctxM, {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [
+                            { label: 'Phát hành (₫)', data: monthBilled, backgroundColor: '#4299e1' },
+                            { label: 'Đã thu (₫)', data: monthCollected, backgroundColor: '#2fb344' },
+                            { label: 'Nợ đọng (₫)', data: monthOutstanding, backgroundColor: '#d63939' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+
+            // Chart 3: Priority Stats
+            var pLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.PriorityStats.Select(p => p.PriorityTag)));
+            var pData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.PriorityStats.Select(p => p.Count)));
+
+            var ctxP = document.getElementById('chartPriority');
+            if (ctxP) {
+                new Chart(ctxP, {
+                    type: 'doughnut',
+                    data: {
+                        labels: pLabels,
+                        datasets: [{
+                            data: pData,
+                            backgroundColor: ['#206bc4', '#4299e1', '#2fb344', '#f59f00', '#ae3ec9', '#d63939', '#74b816']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            // Chart 4: Repair Stats
+            var rLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.RepairStats.Select(r => r.Status)));
+            var rData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Analytics.RepairStats.Select(r => r.Count)));
+
+            var ctxR = document.getElementById('chartRepairs');
+            if (ctxR) {
+                new Chart(ctxR, {
+                    type: 'pie',
+                    data: {
+                        labels: rLabels,
+                        datasets: [{
+                            data: rData,
+                            backgroundColor: ['#2fb344', '#f59f00', '#206bc4', '#d63939', '#6c757d']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        });
+        </text>
     }
 </script>

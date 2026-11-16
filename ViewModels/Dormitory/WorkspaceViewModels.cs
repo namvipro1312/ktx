@@ -70,6 +70,79 @@ public sealed class ModuleViewModel
     public RegistrationStatsViewModel? RegistrationStats { get; set; }
     public List<RegistrationItemViewModel> Registrations { get; set; } = [];
     public List<RegistrationAvailableBedOption> AvailableBedsList { get; set; } = [];
+    public AnalyticsReportViewModel? Analytics { get; set; }
+    public ContractStatsViewModel? ContractStats { get; set; }
+    public PaymentStatsViewModel? PaymentStats { get; set; }
+    public List<SelectOptionViewModel> SystemRoles { get; set; } = [];
+}
+
+public sealed class ContractStatsViewModel
+{
+    public int TotalCount { get; init; }
+    public int ActiveCount { get; init; }
+    public int DraftCount { get; init; }
+    public int ExpiredCount { get; init; }
+}
+
+public sealed class PaymentStatsViewModel
+{
+    public int TotalInvoices { get; init; }
+    public decimal TotalBilled { get; init; }
+    public decimal TotalCollected { get; init; }
+    public decimal TotalOutstanding { get; init; }
+    public int PaidCount { get; init; }
+    public int UnpaidCount { get; init; }
+}
+
+public sealed class AnalyticsReportViewModel
+{
+    public int TotalRooms { get; init; }
+    public int TotalBeds { get; init; }
+    public int OccupiedBeds { get; init; }
+    public int AvailableBeds { get; init; }
+    public double OccupancyRate { get; init; }
+    public decimal TotalBilled { get; init; }
+    public decimal TotalCollected { get; init; }
+    public decimal TotalOutstanding { get; init; }
+    public int TotalRepairs { get; init; }
+    public int ResolvedRepairs { get; init; }
+    public double RepairResolutionRate { get; init; }
+
+    public List<BuildingOccupancyStat> BuildingStats { get; init; } = [];
+    public List<MonthlyFinanceStat> MonthlyStats { get; init; } = [];
+    public List<PriorityStat> PriorityStats { get; init; } = [];
+    public List<RepairTypeStat> RepairStats { get; init; } = [];
+}
+
+public sealed class BuildingOccupancyStat
+{
+    public string BuildingName { get; init; } = "";
+    public string BuildingCode { get; init; } = "";
+    public int TotalRooms { get; init; }
+    public int Capacity { get; init; }
+    public int Occupants { get; init; }
+    public int Available { get; init; }
+    public double Rate { get; init; }
+}
+
+public sealed class MonthlyFinanceStat
+{
+    public string MonthLabel { get; init; } = "";
+    public decimal Billed { get; init; }
+    public decimal Collected { get; init; }
+    public decimal Outstanding { get; init; }
+}
+
+public sealed class PriorityStat
+{
+    public string PriorityTag { get; init; } = "";
+    public int Count { get; init; }
+}
+
+public sealed class RepairTypeStat
+{
+    public string Status { get; init; } = "";
+    public int Count { get; init; }
 }
 
 public sealed class ModuleRowViewModel
