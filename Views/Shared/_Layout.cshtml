@@ -33,40 +33,40 @@
     var nav = isStudent
         ? new (string Key, string Label, string Group)[]
         {
-            ("", "Tổng quan", "Phòng ở & Lưu trú"),
-            ("registrations", "Đăng ký phòng ở", "Phòng ở & Lưu trú"),
-            ("contracts", "Hợp đồng của tôi", "Phòng ở & Lưu trú"),
-            ("rooms", "Tra cứu phòng & giường", "Phòng ở & Lưu trú"),
-            ("repairs", "Báo hỏng & Sửa chữa", "Dịch vụ & Tiện ích"),
-            ("services", "Dịch vụ nội trú", "Dịch vụ & Tiện ích"),
-            ("rules", "Nội quy ký túc xá", "Dịch vụ & Tiện ích"),
-            ("payments", "Hóa đơn & Tiền phòng", "Tài chính cá nhân"),
-            ("deposits", "Tiền cọc lưu trú", "Tài chính cá nhân"),
-            ("refunds", "Hoàn tiền cọc", "Tài chính cá nhân"),
-            ("notifications", "Thông báo KTX", "Thông tin & Hỗ trợ"),
-            ("violations", "Lịch sử vi phạm", "Thông tin & Hỗ trợ")
+            ("", "Bảng theo dõi tiến trình", "Cổng thông tin Nội trú"),
+            ("registrations", "Hồ sơ Đăng ký Chỗ ở", "Cổng thông tin Nội trú"),
+            ("contracts", "Hợp đồng Lưu trú Điện tử", "Cổng thông tin Nội trú"),
+            ("rooms", "Tra cứu Không gian Buồng phòng", "Cổng thông tin Nội trú"),
+            ("repairs", "Báo hỏng & Yêu cầu Bảo trì", "Dịch vụ & Tiện ích"),
+            ("services", "Đăng ký Dịch vụ Nội trú", "Dịch vụ & Tiện ích"),
+            ("rules", "Quy chế & Nội quy KTX", "Dịch vụ & Tiện ích"),
+            ("payments", "Hóa đơn & Cổng VietQR", "Tài chính & Thanh toán"),
+            ("deposits", "Tra cứu Ký quỹ Tiền cọc", "Tài chính & Thanh toán"),
+            ("refunds", "Đề nghị Hoàn trả Tiền cọc", "Tài chính & Thanh toán"),
+            ("notifications", "Thông báo từ Ban Quản lý", "Thông tin & Kỷ luật"),
+            ("violations", "Lịch sử Chấp hành Kỷ luật", "Thông tin & Kỷ luật")
         }
         : new (string Key, string Label, string Group)[]
         {
-            ("", "Tổng quan", "Điều hành & Lưu trú"),
-            ("registrations", "Xét duyệt đăng ký", "Điều hành & Lưu trú"),
-            ("contracts", "Hợp đồng & Nhận/trả phòng", "Điều hành & Lưu trú"),
-            ("rooms", "Phòng & Giường", "Không gian"),
-            ("buildings", "Tòa nhà ký túc xá", "Không gian"),
-            ("assets", "Tài sản thiết bị", "Không gian"),
-            ("meters", "Công tơ điện nước", "Không gian"),
-            ("services", "Danh mục dịch vụ", "Vận hành"),
-            ("repairs", "Điều phối sửa chữa", "Vận hành"),
-            ("rules", "Nội quy ký túc xá", "Vận hành"),
-            ("guests", "Sổ khách thăm", "Vận hành"),
-            ("utilities", "Chốt số điện nước", "Tài chính"),
-            ("payments", "Hóa đơn & Thu phí", "Tài chính"),
-            ("deposits", "Tiền cọc lưu trú", "Tài chính"),
-            ("refunds", "Hoàn trả tiền cọc", "Tài chính"),
-            ("reports", "Báo cáo thống kê", "Tài chính"),
-            ("violations", "Kỷ luật vi phạm", "Hệ thống"),
-            ("notifications", "Thông báo nội bộ", "Hệ thống"),
-            ("users", "Phân quyền người dùng", "Hệ thống")
+            ("", "Bảng điều hành tổng quan", "Điều hành & Lưu trú"),
+            ("registrations", "Thẩm định & Phân bổ Chỗ ở", "Điều hành & Lưu trú"),
+            ("contracts", "Hợp đồng & Bàn giao Buồng phòng", "Điều hành & Lưu trú"),
+            ("rooms", "Sơ đồ Buồng phòng & Giường", "Không gian & Hạ tầng"),
+            ("buildings", "Danh mục Tòa nhà KTX", "Không gian & Hạ tầng"),
+            ("assets", "Kiểm kê Tài sản & Thiết bị", "Không gian & Hạ tầng"),
+            ("meters", "Đồng hồ Đo kiểm Điện nước", "Không gian & Hạ tầng"),
+            ("services", "Định mức Gói Dịch vụ", "Vận hành & Kỹ thuật"),
+            ("repairs", "Quản lý Bảo trì Kỹ thuật", "Vận hành & Kỹ thuật"),
+            ("rules", "Quy chế & Nội quy KTX", "Vận hành & Kỹ thuật"),
+            ("guests", "Sổ bộ Kiểm soát Khách thăm", "Vận hành & Kỹ thuật"),
+            ("utilities", "Đo kiểm & Phân bổ Năng lượng", "Tài chính & Quyết toán"),
+            ("payments", "Sổ cái Hóa đơn & Thu phí", "Tài chính & Quyết toán"),
+            ("deposits", "Quản lý Ký quỹ Tiền cọc", "Tài chính & Quyết toán"),
+            ("refunds", "Quyết toán & Hoàn cọc", "Tài chính & Quyết toán"),
+            ("reports", "Báo cáo Quản trị & Chỉ số KPI", "Tài chính & Quyết toán"),
+            ("violations", "Hồ sơ Giám sát Kỷ luật", "Hệ thống & An toàn"),
+            ("notifications", "Trung tâm Thông báo", "Hệ thống & An toàn"),
+            ("users", "Xác thực & Phân quyền RBAC", "Hệ thống & An toàn")
         };
 }
 <!DOCTYPE html>
@@ -129,7 +129,7 @@
                     <!-- User Campus Role Pill -->
                     <div class="px-3 py-2 my-2 rounded bg-dark-lt border border-white-10 d-flex align-items-center justify-content-between">
                         <span class="badge @(isStudent ? "bg-cyan-lt text-cyan" : "bg-primary-lt text-primary") fw-medium">
-                            @(isStudent ? "Sinh viên" : isAdmin ? "Ban Quản lý KTX" : isAccountant ? "Kế toán" : "Kỹ thuật viên")
+                            @(isStudent ? "Sinh viên Nội trú" : isAdmin ? "Ban Quản trị KTX" : isAccountant ? "Kế toán Tài chính" : "Kỹ thuật & Bảo trì")
                         </span>
                         <span class="badge bg-secondary-lt text-white-50">CS-HN</span>
                     </div>
@@ -171,7 +171,7 @@
                             </span>
                             <div class="flex-fill text-truncate me-2">
                                 <div class="text-white text-truncate fw-medium fs-5">@User.Identity?.Name</div>
-                                <div class="text-white-50 fs-6">@(isStudent ? "Tài khoản sinh viên" : "Quản trị viên")</div>
+                                <div class="text-white-50 fs-6">@(isStudent ? "Sinh viên Nội trú" : isAdmin ? "Cán bộ Quản trị" : isAccountant ? "Cán bộ Kế toán" : "Cán bộ Kỹ thuật")</div>
                             </div>
                             <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
                                 <button type="submit" class="btn btn-icon btn-ghost-light btn-sm text-white-50" title="Đăng xuất" aria-label="Đăng xuất">
