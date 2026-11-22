@@ -76,6 +76,9 @@ public sealed class ModuleViewModel
     public ContractStatsViewModel? ContractStats { get; set; }
     public PaymentStatsViewModel? PaymentStats { get; set; }
     public List<SelectOptionViewModel> SystemRoles { get; set; } = [];
+    public string? CurrentResidentInfo { get; set; }
+    public bool CanRequestRoomTransfer { get; set; }
+    public bool HasPendingRegistration { get; set; }
 }
 
 public sealed class ContractStatsViewModel

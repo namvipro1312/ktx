@@ -477,26 +477,54 @@
     <!-- STUDENT VIEW: APPLICATION PROGRESS STEPPER -->
     @if (User.IsInRole("student") && !isAdmin)
     {
-        var myReg = Model.Registrations.FirstOrDefault();
-        if (myReg is null)
+        @if (!string.IsNullOrEmpty(Model.CurrentResidentInfo))
         {
-            <div class="card shadow-sm border-0 mb-4">
+            <div class="card shadow-sm border mb-4 rounded-3 border-start border-4 border-info">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center">
+                            <span class="avatar avatar-lg bg-info-lt text-info rounded-circle me-3"><i class="ti ti-bed fs-1"></i></span>
+                            <div>
+                                <div class="badge bg-success-lt text-success mb-1 fw-bold">ĐANG LƯU TRÚ</div>
+                                <h3 class="fw-bold fs-2 text-dark mb-1">@Model.CurrentResidentInfo</h3>
+                                <p class="text-muted mb-0 fs-5">Mỗi sinh viên chỉ được đăng ký <strong>1 phòng</strong>. Nếu có nhu cầu chuyển sang phòng khác, bạn chỉ được phép gửi <strong>Đơn đề nghị đổi phòng</strong>.</p>
+                            </div>
+                        </div>
+                        @if (Model.CanRequestRoomTransfer)
+                        {
+                            <a href="#create-form" class="btn btn-info px-3 py-2 fw-bold shadow-sm">
+                                <i class="ti ti-arrows-exchange me-1"></i> Đăng ký đổi phòng
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        var myReg = Model.Registrations.FirstOrDefault();
+        if (myReg is null && string.IsNullOrEmpty(Model.CurrentResidentInfo))
+        {
+            <div class="card shadow-sm border mb-4 rounded-3">
                 <div class="card-body text-center py-5">
                     <i class="ti ti-notes fs-1 text-muted d-block mb-3"></i>
                     <h3 class="fw-bold text-dark">Bạn chưa nộp đơn đăng ký phòng ký túc xá</h3>
                     <p class="text-muted mb-4">Hãy hoàn thành biểu mẫu đăng ký bên dưới để được Ban Quản lý xét duyệt chỗ ở.</p>
-                    <a href="#create-form" class="btn btn-primary">
+                    <a href="#create-form" class="btn btn-primary shadow-sm">
                         <i class="ti ti-pencil me-1"></i> Điền đơn đăng ký ngay
                     </a>
                 </div>
             </div>
         }
-        else
+        else if (myReg is not null)
         {
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            var isTransfer = myReg.Note?.Contains("[Yêu cầu đổi phòng") == true;
+            <div class="card shadow-sm border mb-4 rounded-3">
+                <div class="card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center border-bottom">
                     <div>
-                        <h3 class="card-title fw-bold mb-0">Hồ sơ đăng ký nội trú của bạn: @myReg.RegistrationCode</h3>
+                        <h3 class="card-title fw-bold mb-0">
+                            <i class="ti @(isTransfer ? "ti-arrows-exchange text-info" : "ti-file-text text-primary") me-2"></i>
+                            @(isTransfer ? "Đơn đề nghị đổi phòng:" : "Hồ sơ đăng ký nội trú của bạn:") @myReg.RegistrationCode
+                        </h3>
                         <small class="text-muted">Nộp lúc @myReg.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</small>
                     </div>
                     <div>
@@ -727,6 +755,10 @@
                                     data-search="@($"{reg.RegistrationCode} {reg.StudentCode} {reg.StudentName} {reg.Phone} {reg.Faculty}".ToLowerInvariant())">
                                     <td>
                                         <strong class="text-dark">@reg.RegistrationCode</strong>
+                                        @if (reg.Note?.Contains("[Yêu cầu đổi phòng") == true)
+                                        {
+                                            <span class="badge bg-purple-lt text-purple ms-1"><i class="ti ti-arrows-exchange me-1"></i>Đổi phòng</span>
+                                        }
                                         <div class="text-muted fs-6">@reg.SubmittedAt.ToString("dd/MM/yyyy HH:mm")</div>
                                     </td>
                                     <td>
@@ -1717,7 +1749,7 @@
                     <i class="ti ti-file-pencil fs-1"></i>
                 </span>
                 <div>
-                    <h3 class="card-title fw-bold mb-0">Đơn Đăng Ký Lưu Trú Ký Túc Xá</h3>
+                    <h3 class="card-title fw-bold mb-0">@(Model.CanRequestRoomTransfer && !string.IsNullOrEmpty(Model.CurrentResidentInfo) ? "Đơn Đề Nghị Đổi Phòng Lưu Trú" : "Đơn Đăng Ký Lưu Trú Ký Túc Xá")</h3>
                     <small class="text-muted">Hoàn thiện đầy đủ các nhóm thông tin bên dưới để Ban Quản lý xét duyệt chỗ ở và lập hợp đồng.</small>
                 </div>
             </div>
@@ -1727,7 +1759,7 @@
                 <!-- Group 7: Dữ liệu hệ thống ẩn -->
                 <input type="hidden" name="section" value="registrations" />
                 <input type="hidden" name="periodId" value="2026-2027" />
-                <input type="hidden" name="formType" value="student_detailed_v2" />
+                <input type="hidden" name="formType" value="@(Model.CanRequestRoomTransfer && !string.IsNullOrEmpty(Model.CurrentResidentInfo) ? "room_transfer" : "student_detailed_v2")" />
 
                 <!-- ========================================== -->
                 <!-- NHÓM 1: NGUYỆN VỌNG PHÒNG                  -->
@@ -1935,7 +1967,8 @@
                 <!-- Submit Button -->
                 <div class="d-flex align-items-center justify-content-between pt-3 border-top">
                     <button class="btn btn-primary btn-lg px-5 shadow-sm" type="submit">
-                        <i class="ti ti-send me-2"></i> Gửi Đơn Đăng Ký Lưu Trú
+                        <i class="ti @(Model.CanRequestRoomTransfer && !string.IsNullOrEmpty(Model.CurrentResidentInfo) ? "ti-arrows-exchange" : "ti-send") me-2"></i>
+                        @(Model.CanRequestRoomTransfer && !string.IsNullOrEmpty(Model.CurrentResidentInfo) ? "Gửi Đơn Đề Nghị Đổi Phòng" : "Gửi Đơn Đăng Ký Lưu Trú")
                     </button>
                     <span class="text-muted fs-6"><span class="text-danger">*</span> Các trường có dấu sao đỏ là bắt buộc phải điền.</span>
                 </div>

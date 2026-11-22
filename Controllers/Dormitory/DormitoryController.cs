@@ -368,8 +368,39 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                                      select new { StudentId = g.Key, TotalDebt = g.Sum(b => b.balance_amount ?? 0m) })
                                     .ToDictionaryAsync(x => x.StudentId, x => x.TotalDebt);
 
-                model = Build("registrations", IsStudent ? "Đăng ký phòng & Hồ sơ nguyện vọng" : "Quản lý Đăng ký phòng & Duyệt phòng", IsStudent ? "Theo dõi tiến độ xét duyệt đơn đăng ký phòng và trạng thái phân bổ giường KTX." : "Hội đồng xét duyệt hồ sơ, phân bổ giường trực quan và khởi tạo hợp đồng lưu trú.", ["Mã đăng ký", "Sinh viên", "Nguyện vọng", "Thời gian", "Trạng thái"], allRegList.Select(x => Row(x.id, [x.registration_code, $"{x.student.user.full_name} · {x.student.student_code}", $"{x.preferred_building?.name ?? "Không chọn tòa"} · {x.preferred_room_type ?? "Mọi loại"}", $"{x.requested_start_date:dd/MM/yyyy} — {x.requested_end_date:dd/MM/yyyy}", StatusText(x.status)], x.status,
-                    IsStudent && x.status == "pending" ? [new RowActionViewModel("Hủy đăng ký", "registration-cancel")] : IsStudent || x.status != "pending" ? [] : [new RowActionViewModel("Duyệt & xếp phòng", "approve", true), new RowActionViewModel("Từ chối", "reject")])).ToList(), IsStudent ? "Gửi đơn đăng ký phòng" : null, IsStudent ? "Điền đầy đủ thông tin nguyện vọng và diện ưu tiên (nếu có) để Ban quản lý xét duyệt." : null, IsStudent ? [
+                var studentActiveContract = studentId is not null 
+                    ? await db.contracts.Include(c => c.bed).ThenInclude(b => b.room).ThenInclude(r => r.building).FirstOrDefaultAsync(c => c.student_id == studentId && c.status == "active")
+                    : null;
+
+                var studentPendingReg = studentId is not null
+                    ? await db.room_registrations.FirstOrDefaultAsync(r => r.student_id == studentId && (r.status == "pending" || r.status == "needs_info" || r.status == "waiting_list"))
+                    : null;
+
+                string? studentFormTitle = null;
+                string? studentFormHelp = null;
+
+                if (IsStudent)
+                {
+                    if (studentActiveContract != null)
+                    {
+                        if (studentPendingReg == null)
+                        {
+                            studentFormTitle = "Đăng ký đổi phòng lưu trú";
+                            studentFormHelp = $"Bạn đang lưu trú tại {studentActiveContract.bed.room.building.name} - P.{studentActiveContract.bed.room.room_number} (Giường {studentActiveContract.bed.bed_number}). Gửi đơn bên dưới nếu có nguyện vọng xin chuyển phòng.";
+                        }
+                    }
+                    else
+                    {
+                        if (studentPendingReg == null && !allRegList.Any(x => x.status == "contracted"))
+                        {
+                            studentFormTitle = "Gửi đơn đăng ký phòng";
+                            studentFormHelp = "Điền đầy đủ thông tin nguyện vọng và diện ưu tiên (nếu có) để Ban quản lý xét duyệt.";
+                        }
+                    }
+                }
+
+                model = Build("registrations", IsStudent ? (studentActiveContract != null ? "Hồ sơ lưu trú & Đổi phòng" : "Đăng ký phòng & Hồ sơ nguyện vọng") : "Quản lý Đăng ký phòng & Duyệt phòng", IsStudent ? "Theo dõi tiến độ xét duyệt đơn đăng ký phòng và trạng thái phân bổ giường KTX." : "Hội đồng xét duyệt hồ sơ, phân bổ giường trực quan và khởi tạo hợp đồng lưu trú.", ["Mã đăng ký", "Sinh viên", "Nguyện vọng", "Thời gian", "Trạng thái"], allRegList.Select(x => Row(x.id, [x.registration_code, $"{x.student.user.full_name} · {x.student.student_code}", $"{x.preferred_building?.name ?? "Không chọn tòa"} · {x.preferred_room_type ?? "Mọi loại"}", $"{x.requested_start_date:dd/MM/yyyy} — {x.requested_end_date:dd/MM/yyyy}", StatusText(x.status)], x.status,
+                    IsStudent && x.status == "pending" ? [new RowActionViewModel("Hủy đăng ký", "registration-cancel")] : IsStudent || x.status != "pending" ? [] : [new RowActionViewModel("Duyệt & xếp phòng", "approve", true), new RowActionViewModel("Từ chối", "reject")])).ToList(), studentFormTitle, studentFormHelp, studentFormTitle is not null ? [
                         new("buildingId", "Tòa nhà mong muốn", "select", false, await db.buildings.Where(x => x.is_active).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync()),
                         new("roomType", "Loại phòng nguyện vọng", "select", true, [new("4 người", "Phòng 4 người (Tiêu chuẩn)"), new("6 người", "Phòng 6 người (Tiết kiệm)"), new("2 người", "Phòng 2 người (Chất lượng cao)")]),
                         new("priority", "Diện đối tượng ưu tiên", "select", false, [
@@ -379,8 +410,15 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                             new("Vùng sâu, vùng xa, hải đảo", "Vùng sâu, vùng xa, hải đảo (Ưu tiên 3)"),
                             new("Tân sinh viên năm nhất", "Tân sinh viên năm nhất (Ưu tiên 4)")
                         ]),
-                        new("startDate", "Ngày bắt đầu lưu trú", "date"), new("endDate", "Ngày kết thúc lưu trú", "date"), new("note", "Ghi chú & nguyện vọng thêm (ở cùng bạn, giường tầng dưới...)", "textarea", false)
+                        new("startDate", "Ngày bắt đầu lưu trú", "date"), new("endDate", "Ngày kết thúc lưu trú", "date"), new("note", "Lý do & nguyện vọng (ở cùng bạn, giường dưới, đổi phòng...)", "textarea", false)
                     ] : []);
+
+                if (studentActiveContract != null)
+                {
+                    model.CurrentResidentInfo = $"{studentActiveContract.bed.room.building.name} - P.{studentActiveContract.bed.room.room_number} (Giường {studentActiveContract.bed.bed_number})";
+                    model.CanRequestRoomTransfer = (studentPendingReg == null);
+                }
+                model.HasPendingRegistration = (studentPendingReg != null);
 
                 model.RegistrationStats = new RegistrationStatsViewModel
                 {
@@ -776,11 +814,47 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
             if (section == "registrations")
             {
                 var studentId = await StudentId();
-                var start = DateOnly.Parse(form["startDate"]!);
-                var end = DateOnly.Parse(form["endDate"]!);
+                var formType = form["formType"].ToString();
+
+                var existingActiveContract = await db.contracts
+                    .Include(c => c.bed).ThenInclude(b => b.room).ThenInclude(r => r.building)
+                    .FirstOrDefaultAsync(c => c.student_id == studentId && c.status == "active");
+
+                var existingPendingReg = await db.room_registrations
+                    .FirstOrDefaultAsync(x => x.student_id == studentId && (x.status == "pending" || x.status == "needs_info" || x.status == "waiting_list"));
+
+                if (existingPendingReg != null)
+                {
+                    throw new InvalidOperationException("Bạn hiện đang có một hồ sơ đăng ký hoặc đề nghị đổi phòng đang chờ Ban Quản lý xử lý. Không thể đăng ký thêm lần thứ hai.");
+                }
+
+                if (formType == "room_transfer")
+                {
+                    if (existingActiveContract == null)
+                    {
+                        throw new InvalidOperationException("Bạn chưa có hợp đồng lưu trú hợp lệ nên không thể gửi đơn đổi phòng.");
+                    }
+                }
+                else
+                {
+                    if (existingActiveContract != null)
+                    {
+                        throw new InvalidOperationException($"Bạn hiện đang có phòng lưu trú tại {existingActiveContract.bed.room.building.name} - P.{existingActiveContract.bed.room.room_number} ({existingActiveContract.bed.bed_number}). Mỗi sinh viên chỉ được đăng ký 1 phòng; nếu muốn chuyển phòng, bạn chỉ được phép gửi Đơn đề nghị đổi phòng.");
+                    }
+                    if (await db.room_registrations.AnyAsync(x => x.student_id == studentId && x.status == "contracted"))
+                    {
+                        throw new InvalidOperationException("Bạn đã có phòng lưu trú được phân bổ trong hệ thống. Mỗi sinh viên chỉ được đăng ký 1 phòng.");
+                    }
+                }
+
+                var start = formType == "room_transfer" 
+                    ? DateOnly.FromDateTime(DateTime.Today)
+                    : DateOnly.Parse(form["startDate"]!);
+                var end = formType == "room_transfer"
+                    ? (existingActiveContract?.end_date ?? DateOnly.FromDateTime(DateTime.Today.AddMonths(6)))
+                    : DateOnly.Parse(form["endDate"]!);
+
                 if (end <= start) throw new InvalidOperationException("Ngày kết thúc phải sau ngày bắt đầu.");
-                if (await db.room_registrations.AnyAsync(x => x.student_id == studentId && x.status == "pending"))
-                    throw new InvalidOperationException("Bạn đang có một hồ sơ đăng ký phòng chờ duyệt. Hãy chờ BQL phản hồi hoặc hủy đơn cũ trước khi gửi đơn mới.");
                 
                 var priority = form["priority"].ToString();
                 var bedPosition = form["bedPosition"].ToString();
@@ -816,6 +890,10 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 }
 
                 var noteParts = new List<string>();
+                if (formType == "room_transfer")
+                {
+                    noteParts.Add($"[Yêu cầu đổi phòng từ {existingActiveContract!.bed.room.building.name} - P.{existingActiveContract.bed.room.room_number} ({existingActiveContract.bed.bed_number})]");
+                }
                 if (!string.IsNullOrWhiteSpace(priority) && priority != "Không") noteParts.Add($"[Ưu tiên: {priority}]");
                 if (!string.IsNullOrWhiteSpace(proofFilePath)) noteParts.Add($"[Minh chứng: {proofFilePath}]");
                 if (!string.IsNullOrWhiteSpace(bedPosition) && bedPosition != "none") noteParts.Add($"[Vị trí: {bedPosition}]");
@@ -828,7 +906,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
 
                 var newRegistration = new room_registration
                 {
-                    registration_code = "DK-" + DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
+                    registration_code = (formType == "room_transfer" ? "DP-" : "DK-") + DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
                     student_id = studentId,
                     preferred_building_id = NullableLong(form, "buildingId"),
                     preferred_room_type = form["roomType"],
@@ -840,10 +918,10 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 };
                 db.room_registrations.Add(newRegistration);
                 await db.SaveChangesAsync();
-                Audit("create", section, newRegistration.id, "room registration submitted");
-                await NotifyRole("system_admin", "Có hồ sơ đăng ký phòng mới", $"{newRegistration.registration_code} đang chờ xét duyệt.", "operation", "room_registration", newRegistration.id);
+                Audit("create", section, newRegistration.id, formType == "room_transfer" ? "room transfer requested" : "room registration submitted");
+                await NotifyRole("system_admin", formType == "room_transfer" ? "Có đơn đề nghị đổi phòng mới" : "Có hồ sơ đăng ký phòng mới", $"{newRegistration.registration_code} đang chờ xét duyệt.", "operation", "room_registration", newRegistration.id);
                 await db.SaveChangesAsync();
-                return Done("Đã nộp đơn đăng ký phòng KTX thành công! Ban quản lý sẽ sớm xét duyệt hồ sơ của bạn.", section);
+                return Done(formType == "room_transfer" ? "Đã gửi đơn đề nghị đổi phòng thành công! Ban Quản lý sẽ sớm xét duyệt chỗ ở mới cho bạn." : "Đã nộp đơn đăng ký phòng KTX thành công! Ban quản lý sẽ sớm xét duyệt hồ sơ của bạn.", section);
             }
             if (section == "deposits")
             {
@@ -1055,6 +1133,59 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     }
 
                     if (freeBed is null) throw new InvalidOperationException("Hiện không còn giường trống nào khả dụng để phân bổ.");
+
+                    var isRoomTransfer = registration.note != null && registration.note.Contains("[Yêu cầu đổi phòng");
+                    if (isRoomTransfer)
+                    {
+                        var existingContract = await db.contracts.Include(c => c.bed).ThenInclude(b => b.room).FirstOrDefaultAsync(c => c.student_id == registration.student_id && c.status == "active");
+                        if (existingContract != null)
+                        {
+                            await using (var tx = await db.Database.BeginTransactionAsync())
+                            {
+                                var oldBed = existingContract.bed;
+                                var oldBedInfo = $"Giường {oldBed.bed_number} (P.{oldBed.room.room_number})";
+                                var newBedInfo = $"{freeBed.room.building.name} - P.{freeBed.room.room_number} (Giường {freeBed.bed_number})";
+
+                                // Giải phóng giường cũ
+                                oldBed.status = "available";
+                                if (oldBed.room.status == "full") oldBed.room.status = "available";
+
+                                // Nhận giường mới
+                                freeBed.status = "occupied";
+                                existingContract.bed_id = freeBed.id;
+                                existingContract.monthly_price = freeBed.room.monthly_price;
+
+                                var amendment = new contract_amendment
+                                {
+                                    contract_id = existingContract.id,
+                                    amendment_code = "PL-DP-" + DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString("N")[..4].ToUpperInvariant(),
+                                    amendment_type = "room_transfer",
+                                    old_values = oldBedInfo,
+                                    new_values = newBedInfo,
+                                    reason = "Đổi phòng theo nguyện vọng sinh viên",
+                                    effective_date = DateOnly.FromDateTime(DateTime.Today),
+                                    created_by_user_id = UserId,
+                                    signed_at = DateTime.Now,
+                                    created_at = DateTime.Now
+                                };
+                                db.contract_amendments.Add(amendment);
+
+                                registration.status = "contracted";
+
+                                if (freeBed.room.status != "maintenance")
+                                {
+                                    var remainingBeds = await db.beds.CountAsync(b => b.room_id == freeBed.room_id && b.status == "available" && b.id != freeBed.id);
+                                    if (remainingBeds == 0) freeBed.room.status = "full";
+                                }
+
+                                await db.SaveChangesAsync();
+                                await tx.CommitAsync();
+
+                                Notify(registration.student.user_id, "Đơn đổi phòng đã được duyệt", $"Ban quản lý đã duyệt đơn đổi phòng và chuyển bạn sang {newBedInfo}.", "operation", "contract", existingContract.id);
+                                return Done($"Đã duyệt đổi phòng thành công! Sinh viên đã được chuyển sang {newBedInfo}.", section);
+                            }
+                        }
+                    }
 
                     var adminComment = Request.HasFormContentType && !string.IsNullOrWhiteSpace(Request.Form["comment"])
                         ? Request.Form["comment"].ToString()
