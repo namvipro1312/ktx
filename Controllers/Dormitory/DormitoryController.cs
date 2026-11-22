@@ -137,7 +137,8 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
     public async Task<IActionResult> Workspace(string section = "rooms", string? station = null)
     {
         section = section.ToLowerInvariant();
-        if (IsStudent && section is not ("rooms" or "registrations" or "contracts" or "services" or "repairs" or "rules" or "payments" or "deposits" or "guests" or "violations" or "refunds" or "notifications")) return Forbid();
+        if (section is "guests" or "refunds") return RedirectToAction(nameof(Workspace), new { section = "rooms" });
+        if (IsStudent && section is not ("rooms" or "registrations" or "contracts" or "services" or "repairs" or "rules" or "payments" or "deposits" or "violations" or "notifications")) return Forbid();
         if (!IsStudent && !IsAdmin) return Forbid();
         if (section == "users" && !IsSystemAdmin) return Forbid();
         long? studentId = IsStudent ? await StudentId() : null;
@@ -560,13 +561,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 var depositList = await depositQuery.OrderByDescending(x => x.transaction_date).ToListAsync();
                 model = Build("deposits", "Tiền đặt cọc", "Mọi khoản thu cọc chờ kế toán đối chiếu với giao dịch thực nhận trước khi kích hoạt hợp đồng.", ["Mã giao dịch", "Hợp đồng", "Sinh viên", "Nghiệp vụ", "Số tiền", "Hình thức", "Ngày ghi nhận", "Trạng thái"], depositList.Select(x => Row(x.id, [x.transaction_code, x.contract.contract_code, x.contract.student.user.full_name, StatusText(x.transaction_type), $"{x.amount:N0} ₫", StatusText(x.method), x.transaction_date.ToString("dd/MM/yyyy HH:mm"), x.status == "pending" ? "Chờ đối chiếu" : StatusText(x.status)], x.status, !IsStudent && x.status == "pending" ? [new RowActionViewModel("Xác nhận đã thu", "deposit-confirm", true)] : [])).ToList(), IsStudent ? "Yêu cầu nộp cọc" : null, IsStudent ? "Yêu cầu sẽ ở trạng thái chờ đến khi ban quản lý đối chiếu tiền thực nhận." : null, IsStudent ? [new("contractId", "Hợp đồng", "select", true, await db.contracts.Where(x => x.student_id == studentId && (x.status == "draft" || x.status == "active")).Include(x => x.student).ThenInclude(x => x.user).Select(x => new SelectOptionViewModel(x.id.ToString(), x.contract_code + " · cọc " + x.deposit_amount.ToString("N0") + " ₫")).ToListAsync())] : []);
                 break;
-            case "guests":
-                var guestQuery = db.guest_visits.Include(x => x.student).ThenInclude(x => x.user).AsQueryable();
-                if (studentId is not null) guestQuery = guestQuery.Where(x => x.student_id == studentId);
-                var guestRows = await guestQuery.OrderByDescending(x => x.expected_arrival).Take(200).ToListAsync();
-                model = Build("guests", "Khách thăm", "Sinh viên đăng ký trước; ban quản lý duyệt và ghi nhận thời điểm vào, ra.", ["Khách", "Sinh viên", "Mục đích", "Dự kiến", "Thực tế", "Trạng thái"], guestRows.Select(x => Row(x.id, [x.guest_name, x.student.user.full_name, x.visit_purpose ?? "—", $"{x.expected_arrival:dd/MM/yyyy HH:mm} — {x.expected_departure:dd/MM HH:mm}", $"{x.actual_arrival:dd/MM HH:mm} — {x.actual_departure:dd/MM HH:mm}", StatusText(x.status)], x.status,
-                    IsStudent && x.status == "pending" ? [new RowActionViewModel("Hủy yêu cầu", "guest-cancel")] : IsStudent ? [] : x.status == "pending" ? [new RowActionViewModel("Duyệt", "guest-approve", true), new RowActionViewModel("Từ chối", "guest-reject")] : x.status == "approved" ? [new RowActionViewModel("Ghi nhận khách đến", "guest-arrive", true)] : x.status == "checked_in" ? [new RowActionViewModel("Ghi nhận khách rời", "guest-depart", true)] : [])).ToList(), IsStudent ? "Đăng ký khách" : null, IsStudent ? "Chỉ thu thập thông tin tối thiểu để kiểm soát khách ra vào khu nội trú." : null, IsStudent ? [new("guestName", "Họ tên khách"), new("guestPhone", "Số điện thoại", "tel", false), new("purpose", "Mục đích", "text", false), new("arrival", "Dự kiến đến", "datetime-local"), new("departure", "Dự kiến rời", "datetime-local", false)] : []);
-                break;
             case "assets":
                 var assetList = await db.room_assets.Include(x => x.room).ThenInclude(x => x.building).Include(x => x.asset_type).OrderBy(x => x.room.building.code).ThenBy(x => x.room.room_number).ThenBy(x => x.name).ToListAsync();
                 model = Build("assets", "Tài sản phòng", "Theo dõi số lượng và tình trạng tài sản gắn với từng phòng.", ["Mã / tài sản", "Tòa / phòng", "Nhóm", "Số lượng", "Kiểm kê gần nhất", "Tình trạng"], assetList.Select(x => Row(x.id, [$"{x.asset_tag ?? "Chưa gắn mã"} · {x.name}", $"{x.room.building.code} · {x.room.room_number}", x.asset_type.name, x.quantity.ToString(), x.last_checked_at?.ToString("dd/MM/yyyy") ?? "Chưa kiểm kê", StatusText(x.condition_status)], x.condition_status, IsStudent ? [] : [new RowActionViewModel("Ghi nhận kiểm kê", "asset-check")])).ToList(), IsAdmin ? "Ghi nhận tài sản" : null, null, IsAdmin ? [new("roomId", "Phòng", "select", true, await db.rooms.Include(x => x.building).OrderBy(x => x.building.code).ThenBy(x => x.room_number).Select(x => new SelectOptionViewModel(x.id.ToString(), x.building.code + " · " + x.room_number)).ToListAsync()), new("assetTypeId", "Nhóm tài sản", "select", true, await db.asset_types.OrderBy(x => x.name).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync()), new("assetTag", "Mã tài sản", "text", false), new("name", "Tên tài sản"), new("quantity", "Số lượng", "number"), new("condition", "Tình trạng", "select", true, [new("new", "Mới"), new("good", "Tốt"), new("worn", "Hao mòn"), new("damaged", "Hư hỏng")]), new("acquiredAt", "Ngày nhập", "date", false)] : []);
@@ -584,12 +578,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 if (studentId is not null) violationQuery = violationQuery.Where(x => x.student_id == studentId);
                 var violations = await violationQuery.OrderByDescending(x => x.occurred_at).Take(200).ToListAsync();
                 model = Build("violations", "Vi phạm nội quy", "Biên bản, mức phạt, trạng thái xử lý và trạng thái lập khoản thu được lưu riêng.", ["Mã / nội dung", "Sinh viên", "Nội quy", "Thời điểm", "Mức phạt", "Khoản thu", "Trạng thái"], violations.Select(x => Row(x.id, [$"{x.violation_code} · {x.title}", x.student.user.full_name, x.rule?.title ?? "—", x.occurred_at.ToString("dd/MM/yyyy HH:mm"), $"{x.fine_amount:N0} ₫", x.violation_invoice_item is null ? "Chưa lập hóa đơn" : "Đã lập hóa đơn", StatusText(x.status)], x.status, IsStudent ? [] : x.status is "resolved" or "cancelled" ? [] : [new RowActionViewModel("Đưa vào xem xét", "violation-review"), new RowActionViewModel("Lập khoản phạt", "violation-invoice"), new RowActionViewModel("Đóng biên bản", "violation-resolve")])).ToList(), IsAdmin ? "Lập biên bản" : null, null, IsAdmin ? [new("studentId", "Sinh viên", "select", true, await db.students.Include(x => x.user).OrderBy(x => x.student_code).Select(x => new SelectOptionViewModel(x.id.ToString(), x.student_code + " · " + x.user.full_name)).ToListAsync()), new("ruleId", "Nội quy liên quan", "select", false, await db.dormitory_rules.Where(x => x.is_active).Select(x => new SelectOptionViewModel(x.id.ToString(), x.title)).ToListAsync()), new("title", "Nội dung vi phạm"), new("occurredAt", "Thời điểm", "datetime-local"), new("fineAmount", "Mức phạt (₫)", "number"), new("description", "Mô tả", "textarea", false)] : []);
-                break;
-            case "refunds":
-                var refundQuery = db.payment_refunds.Include(x => x.payment).ThenInclude(x => x.invoice).ThenInclude(x => x.contract).ThenInclude(x => x.student).ThenInclude(x => x.user).AsQueryable();
-                if (studentId is not null) refundQuery = refundQuery.Where(x => x.payment.invoice.contract.student_id == studentId);
-                var refunds = await refundQuery.OrderByDescending(x => x.created_at).Take(200).ToListAsync();
-                model = Build("refunds", "Yêu cầu hoàn tiền", "Sinh viên gửi yêu cầu; nhân viên chỉ ghi nhận hoàn thành sau khi đã hoàn tiền thực tế ngoài hệ thống.", ["Mã yêu cầu", "Khoản thu", "Sinh viên", "Số tiền", "Lý do", "Ngày gửi", "Trạng thái"], refunds.Select(x => Row(x.id, [x.refund_code, x.payment.payment_code, x.payment.invoice.contract.student.user.full_name, $"{x.amount:N0} ₫", x.reason ?? "—", x.created_at.ToString("dd/MM/yyyy"), StatusText(x.status)], x.status, !IsStudent && x.status == "pending" ? [new RowActionViewModel("Ghi nhận đã hoàn", "refund-complete", true), new RowActionViewModel("Từ chối", "refund-reject")] : [])).ToList(), IsStudent ? "Yêu cầu hoàn tiền" : null, "Yêu cầu không tự chuyển tiền; ban quản lý đối chiếu và xử lý thực tế trước khi ghi nhận hoàn tất.", IsStudent ? [new("paymentId", "Khoản đã thu", "select", true, await db.payments.Where(x => x.status == "completed" && x.invoice.contract.student_id == studentId).Include(x => x.invoice).ThenInclude(x => x.contract).Select(x => new SelectOptionViewModel(x.id.ToString(), x.payment_code + " · " + x.amount.ToString("N0") + " ₫")).ToListAsync()), new("amount", "Số tiền đề nghị (₫)", "number"), new("reason", "Lý do", "textarea")] : []);
                 break;
             case "notifications":
                 var notificationQuery = db.notifications.Where(x => x.user_id == UserId).OrderByDescending(x => x.created_at);
@@ -782,7 +770,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
     public async Task<IActionResult> Create(string section, IFormCollection form)
     {
         section = section.ToLowerInvariant();
-        if (IsStudent && section is not ("registrations" or "services" or "repairs" or "guests" or "refunds")) return Forbid();
+        if (IsStudent && section is not ("registrations" or "services" or "repairs")) return Forbid();
         try
         {
             if (section == "registrations")
@@ -872,37 +860,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 Audit("deposit-request", section, request.id, "pending deposit collection");
                 await db.SaveChangesAsync();
                 return Done("Đã tạo yêu cầu nộp cọc. Hợp đồng chỉ được kích hoạt sau khi kế toán xác nhận.", section);
-            }
-            if (section == "guests")
-            {
-                if (!IsStudent) return Forbid();
-                var arrival = DateTime.Parse(Text(form, "arrival"), CultureInfo.InvariantCulture);
-                var departure = string.IsNullOrWhiteSpace(form["departure"]) ? (DateTime?)null : DateTime.Parse(Text(form, "departure"), CultureInfo.InvariantCulture);
-                if (arrival < DateTime.Now.AddMinutes(-5) || departure is not null && departure <= arrival) throw new InvalidOperationException("Thời gian khách đến cần ở tương lai; thời gian rời phải sau lúc đến.");
-                var studentId = await StudentId();
-                if (!await db.contracts.AnyAsync(x => x.student_id == studentId && x.status == "active" && x.start_date <= DateOnly.FromDateTime(arrival) && x.end_date >= DateOnly.FromDateTime(arrival))) throw new InvalidOperationException("Bạn cần có hợp đồng đang lưu trú vào ngày khách đến.");
-                var guest = new guest_visit { student_id = studentId, guest_name = Text(form, "guestName"), guest_phone = string.IsNullOrWhiteSpace(form["guestPhone"]) ? null : Text(form, "guestPhone"), visit_purpose = string.IsNullOrWhiteSpace(form["purpose"]) ? null : Text(form, "purpose"), expected_arrival = arrival, expected_departure = departure, status = "pending", created_at = DateTime.Now };
-                db.guest_visits.Add(guest);
-                await db.SaveChangesAsync();
-                Audit("guest-request", section, guest.id, "guest visit submitted");
-                await db.SaveChangesAsync();
-                return Done("Đã gửi đăng ký khách thăm.", section);
-            }
-            if (section == "refunds")
-            {
-                if (!IsStudent) return Forbid();
-                var paymentId = Long(form, "paymentId");
-                var paid = await db.payments.Include(x => x.payment_refunds).Include(x => x.invoice).SingleAsync(x => x.id == paymentId && x.status == "completed" && x.invoice.contract.student.user_id == UserId);
-                var amount = Decimal(form, "amount");
-                var alreadyRequested = paid.payment_refunds.Where(x => x.status is "pending" or "completed").Sum(x => x.amount);
-                if (amount <= 0 || alreadyRequested + amount > paid.amount) throw new InvalidOperationException("Số tiền yêu cầu vượt khoản thanh toán còn có thể hoàn.");
-                var refund = new payment_refund { payment_id = paid.id, refund_code = "HT-" + Guid.NewGuid().ToString("N")[..8].ToUpperInvariant(), amount = amount, reason = Text(form, "reason"), method = "bank_transfer", status = "pending", created_at = DateTime.Now };
-                db.payment_refunds.Add(refund);
-                await db.SaveChangesAsync();
-                Audit("refund-request", section, refund.id, refund.refund_code);
-                await NotifyRole("system_admin", "Có yêu cầu hoàn tiền", $"{refund.refund_code} · {refund.amount:N0} ₫ đang chờ xem xét.", "billing", "payment_refund", refund.id);
-                await db.SaveChangesAsync();
-                return Done("Đã gửi yêu cầu hoàn tiền để ban quản lý xem xét.", section);
             }
             if (section == "services" && IsStudent)
             {
@@ -1050,16 +1007,14 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
     {
         section = section.ToLowerInvariant();
                 if (operation == "view-contract") return RedirectToAction(nameof(ContractView), new { id });
-        if (operation is ("acknowledge" or "subscribe" or "unsubscribe" or "payment-request" or "guest-cancel" or "student-sign" or "student-checkin") && !IsStudent) return Forbid();
+        if (operation is ("acknowledge" or "subscribe" or "unsubscribe" or "payment-request" or "student-sign" or "student-checkin") && !IsStudent) return Forbid();
         if (operation is ("user-toggle" or "user-edit-role" or "user-reset-pwd") && !IsSystemAdmin) return Forbid();
         if (operation is ("room-edit" or "contract-amend") && !IsAdmin) return Forbid();
         if (operation == "open-deposits") return RedirectToAction(nameof(Workspace), new { section = "deposits" });
-        if (IsStudent && operation is ("approve" or "reject" or "request-changes" or "waitlist" or "revoke-expired" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "room-close" or "payment-confirm" or "deposit-confirm" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "guest-approve" or "guest-reject" or "guest-arrive" or "guest-depart" or "asset-check" or "meter-toggle" or "violation-review" or "violation-resolve" or "violation-invoice" or "refund-complete" or "refund-reject" or "auto-allocate-all" or "room-edit" or "contract-amend" or "user-edit-role" or "user-reset-pwd")) return Forbid();
-        if (operation.StartsWith("guest-") && operation != "guest-cancel" && !IsAdmin) return Forbid();
+        if (IsStudent && operation is ("approve" or "reject" or "request-changes" or "waitlist" or "revoke-expired" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "room-close" or "payment-confirm" or "deposit-confirm" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "asset-check" or "meter-toggle" or "violation-review" or "violation-resolve" or "violation-invoice" or "auto-allocate-all" or "room-edit" or "contract-amend" or "user-edit-role" or "user-reset-pwd")) return Forbid();
         if (operation == "asset-check" && !IsAdmin) return Forbid();
         if (operation == "meter-toggle" && !IsAdmin) return Forbid();
         if (operation.StartsWith("violation-") && !IsAdmin) return Forbid();
-        if (operation.StartsWith("refund-") && !IsAdmin) return Forbid();
         if (operation == "notification-read" && !IsStudent && !IsAdmin) return Forbid();
         try
         {
@@ -1537,27 +1492,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     var targetUser = await db.users.SingleAsync(x => x.id == id && x.id != UserId);
                     targetUser.is_active = !targetUser.is_active; targetUser.updated_at = DateTime.Now;
                     break;
-                case "guest-cancel":
-                    var ownGuest = await db.guest_visits.Include(x => x.student).ThenInclude(x => x.user).SingleAsync(x => x.id == id && x.status == "pending");
-                    if (ownGuest.student.user_id != UserId) return Forbid();
-                    ownGuest.status = "cancelled";
-                    break;
-                case "guest-approve": case "guest-reject":
-                    var guestReview = await db.guest_visits.Include(x => x.student).SingleAsync(x => x.id == id && x.status == "pending");
-                    guestReview.status = operation == "guest-approve" ? "approved" : "rejected";
-                    guestReview.approved_by_user_id = UserId;
-                    Notify(guestReview.student.user_id, operation == "guest-approve" ? "Đăng ký khách đã được duyệt" : "Đăng ký khách chưa được duyệt", $"Yêu cầu khách {guestReview.guest_name} ngày {guestReview.expected_arrival:dd/MM/yyyy HH:mm} đã được xử lý.", "operation", "guest_visit", guestReview.id);
-                    break;
-                case "guest-arrive":
-                    var arrivingGuest = await db.guest_visits.SingleAsync(x => x.id == id && x.status == "approved");
-                    arrivingGuest.actual_arrival = DateTime.Now;
-                    arrivingGuest.status = "checked_in";
-                    break;
-                case "guest-depart":
-                    var departingGuest = await db.guest_visits.SingleAsync(x => x.id == id && x.status == "checked_in");
-                    departingGuest.actual_departure = DateTime.Now;
-                    departingGuest.status = "completed";
-                    break;
                 case "asset-check":
                     var checkedAsset = await db.room_assets.SingleAsync(x => x.id == id);
                     checkedAsset.last_checked_at = DateTime.Now;
@@ -1595,19 +1529,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     db.invoice_items.Add(fineItem);
                     await db.SaveChangesAsync();
                     db.violation_invoice_items.Add(new violation_invoice_item { violation_id = id, invoice_item_id = fineItem.id, linked_at = DateTime.Now });
-                    break;
-                case "refund-complete": case "refund-reject":
-                    var targetRefund = await db.payment_refunds.SingleAsync(x => x.id == id && x.status == "pending");
-                    targetRefund.status = operation == "refund-complete" ? "completed" : "rejected";
-                    targetRefund.processed_by_user_id = UserId;
-                    targetRefund.processed_at = DateTime.Now;
-                    if (operation == "refund-complete")
-                    {
-                        var originalPayment = await db.payments.SingleAsync(x => x.id == targetRefund.payment_id);
-                        var refundedTotal = await db.payment_refunds.Where(x => x.payment_id == originalPayment.id && (x.status == "completed" || x.id == targetRefund.id)).SumAsync(x => x.amount);
-                        if (refundedTotal >= originalPayment.amount) originalPayment.status = "refunded";
-                        Notify(await db.invoices.Where(x => x.id == originalPayment.invoice_id).Select(x => x.contract.student.user_id).SingleAsync(), "Yêu cầu hoàn tiền đã được ghi nhận", $"Yêu cầu {targetRefund.refund_code} đã được kế toán đánh dấu hoàn tất.", "billing", "payment_refund", targetRefund.id);
-                    }
                     break;
                 case "notification-read":
                     var notice = await db.notifications.SingleAsync(x => x.id == id && x.user_id == UserId);
