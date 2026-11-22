@@ -154,7 +154,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     .ThenBy(x => x.room_number)
                     .ToListAsync();
 
-                // TỰ ĐỘNG ĐÓNG PHÒNG ĐÃ ĐẦY; BẢO TRÌ PHẢI ẤN THỦ CÔNG
                 var hasStatusChanges = false;
                 foreach (var r in allRooms)
                 {
@@ -292,23 +291,20 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     ];
                 }
 
-                // If matrix data exists, use it and skip the flat‑table build.
                 if (matrixGroups.Any())
                 {
                     model.RoomGroups = matrixGroups;
-                    // No need to populate the traditional rows – the view will render the matrix.
                 }
                 else
                 {
-                    // Fallback to the original flat‑table view when there are no rooms.
                     if (IsStudent && studentId is not null)
                     {
                         var studentRooms = allRooms.Where(x => x.status == "available").ToList();
-                        model = Build("rooms", "Phòng và giường", "Chỗ ở đang mở đăng ký tại các tòa. Số giường trống được tính từ danh sách giường thực tế.", ["Tòa / phòng", "Loại phòng", "Còn trống", "Giá tháng", "Tình trạng"], studentRooms.Select(x => Row(x.id, [$"{x.building.name} · {x.room_number}", x.room_type ?? "—", x.beds.Count(b => b.status == "available").ToString(), $"{x.monthly_price:N0} ₫", StatusText(x.status)], x.status)).ToList());
+                        model = Build("rooms", "Phòng và giường", "Chỗ ở đang mở đăng ký tại các tòa.", ["Tòa / phòng", "Loại phòng", "Còn trống", "Giá tháng", "Tình trạng"], studentRooms.Select(x => Row(x.id, [$"{x.building.name} · {x.room_number}", x.room_type ?? "—", x.beds.Count(b => b.status == "available").ToString(), $"{x.monthly_price:N0} ₫", StatusText(x.status)], x.status)).ToList());
                     }
                     else
                     {
-                        model = Build("rooms", "Tòa, phòng và giường", "Theo dõi năng lực, giá và tình trạng từng chỗ ở.", ["Tòa / phòng", "Tầng", "Loại phòng", "Danh sách giường", "Trống / Sức chứa", "Giá tháng", "Trạng thái"], allRooms.Select(x => Row(x.id, [$"{x.building.name} · {x.room_number}", x.floor_number?.ToString() ?? "—", x.room_type ?? "—", string.Join(", ", x.beds.OrderBy(b => b.bed_number).Select(b => $"{b.bed_number} ({(b.status == "available" ? "Trống" : "Đã ở")})")), $"{x.beds.Count(b => b.status == "available")} / {x.capacity}", $"{x.monthly_price:N0} ₫", StatusText(x.status)], x.status, !IsAdmin || x.status == "maintenance" ? [] : [new RowActionViewModel("Bảo trì", "room-maintenance"), new RowActionViewModel("Mở phòng", "room-open")])).ToList(), "Thêm phòng", "Mã phòng, tòa, tầng, loại, sức chứa, giá tháng.", [
+                        model = Build("rooms", "Tòa, phòng và giường", "Theo dõi sức chứa, đơn giá và tình trạng phòng.", ["Tòa / phòng", "Tầng", "Loại phòng", "Danh sách giường", "Trống / Sức chứa", "Giá tháng", "Trạng thái"], allRooms.Select(x => Row(x.id, [$"{x.building.name} · {x.room_number}", x.floor_number?.ToString() ?? "—", x.room_type ?? "—", string.Join(", ", x.beds.OrderBy(b => b.bed_number).Select(b => $"{b.bed_number} ({(b.status == "available" ? "Trống" : "Đã ở")})")), $"{x.beds.Count(b => b.status == "available")} / {x.capacity}", $"{x.monthly_price:N0} ₫", StatusText(x.status)], x.status, !IsAdmin || x.status == "maintenance" ? [] : [new RowActionViewModel("Bảo trì", "room-maintenance"), new RowActionViewModel("Mở phòng", "room-open")])).ToList(), "Thêm phòng", "Mã phòng, tòa, tầng, loại, sức chứa, giá tháng.", [
                             new("buildingId", "Tòa", "select", true, await db.buildings.Where(x => x.is_active).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync()),
                             new("roomNumber", "Mã phòng"), new("floor", "Tầng", "number"), new("roomType", "Loại phòng"), new("capacity", "Sức chứa", "number"), new("price", "Giá tháng (₫)", "number")]);
                     }
@@ -316,7 +312,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 break;
             case "buildings":
                 var buildings = await db.buildings.Include(x => x.rooms).OrderBy(x => x.code).ToListAsync();
-                model = Build("buildings", "Tòa nhà", "Danh mục khu nhà đang vận hành.", ["Mã tòa", "Tên tòa", "Địa chỉ", "Số phòng", "Trạng thái"], buildings.Select(x => Row(x.id, [x.code, x.name, x.address ?? "—", x.rooms.Count.ToString(), x.is_active ? "Đang dùng" : "Đã khóa"], x.is_active ? "active" : "inactive")).ToList(), "Thêm tòa", "Tạo một tòa nhà mới.", [new("code", "Mã tòa"), new("name", "Tên tòa"), new("address", "Địa chỉ", "text", false), new("description", "Ghi chú", "text", false)]);
+                model = Build("buildings", "Tòa nhà", "Danh mục tòa nhà KTX.", ["Mã tòa", "Tên tòa", "Địa chỉ", "Số phòng", "Trạng thái"], buildings.Select(x => Row(x.id, [x.code, x.name, x.address ?? "—", x.rooms.Count.ToString(), x.is_active ? "Đang dùng" : "Đã khóa"], x.is_active ? "active" : "inactive")).ToList(), "Thêm tòa", "Tạo một tòa nhà mới.", [new("code", "Mã tòa"), new("name", "Tên tòa"), new("address", "Địa chỉ", "text", false), new("description", "Ghi chú", "text", false)]);
                 break;
             case "registrations":
                 var regQuery = db.room_registrations
@@ -354,7 +350,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     })
                     .ToListAsync();
 
-                // Lịch sử kiểm tra đối soát sinh viên: Số vụ vi phạm và nợ cũ
                 var regStudentIds = allRegList.Select(x => x.student_id).Distinct().ToList();
                 var violationsMap = await db.student_violations
                     .Where(v => regStudentIds.Contains(v.student_id))
@@ -386,7 +381,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         if (studentPendingReg == null)
                         {
                             studentFormTitle = "Đăng ký đổi phòng lưu trú";
-                            studentFormHelp = $"Bạn đang lưu trú tại {studentActiveContract.bed.room.building.name} - P.{studentActiveContract.bed.room.room_number} (Giường {studentActiveContract.bed.bed_number}). Gửi đơn bên dưới nếu có nguyện vọng xin chuyển phòng.";
+                            studentFormHelp = $"Đang ở {studentActiveContract.bed.room.building.name} - P.{studentActiveContract.bed.room.room_number} (Giường {studentActiveContract.bed.bed_number}). Chọn phòng mới nếu muốn đổi.";
                         }
                     }
                     else
@@ -394,12 +389,12 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         if (studentPendingReg == null && !allRegList.Any(x => x.status == "contracted"))
                         {
                             studentFormTitle = "Gửi đơn đăng ký phòng";
-                            studentFormHelp = "Điền đầy đủ thông tin nguyện vọng và diện ưu tiên (nếu có) để Ban quản lý xét duyệt.";
+                            studentFormHelp = "Chọn tòa, loại phòng và diện ưu tiên để xét duyệt.";
                         }
                     }
                 }
 
-                model = Build("registrations", IsStudent ? (studentActiveContract != null ? "Hồ sơ lưu trú & Đổi phòng" : "Đăng ký phòng & Hồ sơ nguyện vọng") : "Quản lý Đăng ký phòng & Duyệt phòng", IsStudent ? "Theo dõi tiến độ xét duyệt đơn đăng ký phòng và trạng thái phân bổ giường KTX." : "Hội đồng xét duyệt hồ sơ, phân bổ giường trực quan và khởi tạo hợp đồng lưu trú.", ["Mã đăng ký", "Sinh viên", "Nguyện vọng", "Thời gian", "Trạng thái"], allRegList.Select(x => Row(x.id, [x.registration_code, $"{x.student.user.full_name} · {x.student.student_code}", $"{x.preferred_building?.name ?? "Không chọn tòa"} · {x.preferred_room_type ?? "Mọi loại"}", $"{x.requested_start_date:dd/MM/yyyy} — {x.requested_end_date:dd/MM/yyyy}", StatusText(x.status)], x.status,
+                model = Build("registrations", IsStudent ? (studentActiveContract != null ? "Hồ sơ lưu trú & Đổi phòng" : "Đăng ký phòng & Hồ sơ nguyện vọng") : "Quản lý Đăng ký phòng & Duyệt phòng", IsStudent ? "Theo dõi xét duyệt đăng ký và phân bổ chỗ ở." : "Xét duyệt hồ sơ và phân bổ chỗ ở trực quan.", ["Mã đăng ký", "Sinh viên", "Nguyện vọng", "Thời gian", "Trạng thái"], allRegList.Select(x => Row(x.id, [x.registration_code, $"{x.student.user.full_name} · {x.student.student_code}", $"{x.preferred_building?.name ?? "Không chọn tòa"} · {x.preferred_room_type ?? "Mọi loại"}", $"{x.requested_start_date:dd/MM/yyyy} — {x.requested_end_date:dd/MM/yyyy}", StatusText(x.status)], x.status,
                     IsStudent && x.status == "pending" ? [new RowActionViewModel("Hủy đăng ký", "registration-cancel")] : IsStudent || x.status != "pending" ? [] : [new RowActionViewModel("Duyệt & xếp phòng", "approve", true), new RowActionViewModel("Từ chối", "reject")])).ToList(), studentFormTitle, studentFormHelp, studentFormTitle is not null ? [
                         new("buildingId", "Tòa nhà mong muốn", "select", false, await db.buildings.Where(x => x.is_active).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync()),
                         new("roomType", "Loại phòng nguyện vọng", "select", true, [new("4 người", "Phòng 4 người (Tiêu chuẩn)"), new("6 người", "Phòng 6 người (Tiết kiệm)"), new("2 người", "Phòng 2 người (Chất lượng cao)")]),
@@ -620,7 +615,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
             case "notifications":
                 var notificationQuery = db.notifications.Where(x => x.user_id == UserId).OrderByDescending(x => x.created_at);
                 var notices = await notificationQuery.Take(100).ToListAsync();
-                model = Build("notifications", "Thông báo của tôi", "Lịch sử thông báo riêng của tài khoản đang đăng nhập.", ["Tiêu đề", "Nội dung", "Phân loại", "Ngày gửi", "Trạng thái"], notices.Select(x => Row(x.id, [x.title, x.message, x.notification_type, x.created_at.ToString("dd/MM/yyyy HH:mm"), x.read_at is null ? "Chưa đọc" : $"Đã đọc · {x.read_at:dd/MM/yyyy HH:mm}"], x.read_at is null ? "pending" : "completed", x.read_at is null ? [new RowActionViewModel("Đánh dấu đã đọc", "notification-read", true)] : [])).ToList(), IsAdmin ? "Gửi thông báo" : null, null, IsAdmin ? [new("userId", "Người nhận", "select", true, await db.users.Where(x => x.is_active).OrderBy(x => x.full_name).Select(x => new SelectOptionViewModel(x.id.ToString(), x.full_name + " · " + x.username)).ToListAsync()), new("title", "Tiêu đề"), new("message", "Nội dung", "textarea"), new("notificationType", "Phân loại", "select", true, [new("general", "Thông báo chung"), new("billing", "Tài chính"), new("operation", "Vận hành")])] : []);
+                model = Build("notifications", "Thông báo của tôi", "Lịch sử thông báo tài khoản.", ["Tiêu đề", "Nội dung", "Phân loại", "Ngày gửi", "Trạng thái"], notices.Select(x => Row(x.id, [x.title, x.message, x.notification_type, x.created_at.ToString("dd/MM/yyyy HH:mm"), x.read_at is null ? "Chưa đọc" : $"Đã đọc · {x.read_at:dd/MM/yyyy HH:mm}"], x.read_at is null ? "pending" : "completed", x.read_at is null ? [new RowActionViewModel("Đánh dấu đã đọc", "notification-read", true)] : [])).ToList(), IsAdmin ? "Gửi thông báo" : null, null, IsAdmin ? [new("userId", "Người nhận", "select", true, await db.users.Where(x => x.is_active).OrderBy(x => x.full_name).Select(x => new SelectOptionViewModel(x.id.ToString(), x.full_name + " · " + x.username)).ToListAsync()), new("title", "Tiêu đề"), new("message", "Nội dung", "textarea"), new("notificationType", "Phân loại", "select", true, [new("general", "Thông báo chung"), new("billing", "Tài chính"), new("operation", "Vận hành")])] : []);
                 break;
             case "reports":
                 if (!IsAdmin) return Forbid();
@@ -674,7 +669,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     .Select(g => new RepairTypeStat { Status = StatusText(g.Key), Count = g.Sum(x => x.request_count ?? 0) })
                     .ToList();
 
-                model = Build("reports", "Trung tâm Thống kê & Báo cáo KTX", "Dữ liệu tổng hợp từ các view và số liệu thực tế trong hệ thống.", ["Tòa", "Phòng", "Sức chứa", "Đang ở / còn trống", "Tình trạng"], buildingsReport.Select(x => Row(x.building_id, [x.building_code + " · " + x.building_name, x.room_count?.ToString() ?? "0", x.nominal_capacity?.ToString() ?? "0", $"{x.current_occupants ?? 0} / {x.available_slots ?? 0}", "Tổng hợp từ hợp đồng hiệu lực"], "active")).ToList());
+                model = Build("reports", "Trung tâm Thống kê & Báo cáo KTX", "Dữ liệu tổng hợp toàn hệ thống.", ["Tòa", "Phòng", "Sức chứa", "Đang ở / còn trống", "Tình trạng"], buildingsReport.Select(x => Row(x.building_id, [x.building_code + " · " + x.building_name, x.room_count?.ToString() ?? "0", x.nominal_capacity?.ToString() ?? "0", $"{x.current_occupants ?? 0} / {x.available_slots ?? 0}", "Tổng hợp từ hợp đồng hiệu lực"], "active")).ToList());
                 model.Rows.AddRange(monthly.OrderByDescending(x => x.billing_month).Select((x, i) => Row(-i - 1, ["Thu chi · " + (x.billing_month?.ToString("MM/yyyy") ?? "—"), x.invoice_count?.ToString() ?? "0", "—", "—", $"Đã lập {x.billed_amount ?? 0m:N0} ₫ · Đã thu {x.collected_amount ?? 0m:N0} ₫ · Còn {x.outstanding_amount ?? 0m:N0} ₫"], "report")));
 
                 model.Analytics = new AnalyticsReportViewModel
@@ -701,14 +696,12 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 var userStation = (station ?? "staff").ToLowerInvariant();
                 var allDbRoles = await db.roles.OrderBy(r => r.name).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync();
 
-                // Count for tabs
                 var allUsersForCount = await db.users.Include(x => x.student).Include(x => x.user_roles).ThenInclude(x => x.role).ToListAsync();
                 var staffCount = allUsersForCount.Count(u => u.student == null);
                 var studentCount = allUsersForCount.Count(u => u.student != null);
 
                 if (userStation == "students")
                 {
-                    // TAB SINH VIÊN: users có student record, include contract->bed->room->building
                     var studentUsers = await db.users
                         .Include(x => x.student)
                         .Include(x => x.user_roles).ThenInclude(x => x.role)
@@ -716,7 +709,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         .OrderBy(x => x.student!.student_code)
                         .ToListAsync();
 
-                    // Get active contracts for room info
                     var studentIds = studentUsers.Where(x => x.student != null).Select(x => x.student!.id).ToList();
                     var activeContracts2 = await db.contracts
                         .Include(x => x.bed).ThenInclude(x => x.room).ThenInclude(x => x.building)
@@ -724,7 +716,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         .ToListAsync();
                     var contractMap = activeContracts2.GroupBy(x => x.student_id).ToDictionary(g => g.Key, g => g.First());
 
-                    model = Build("users", "Tài khoản sinh viên", "Danh sách tài khoản và hồ sơ sinh viên nội trú.",
+                    model = Build("users", "Tài khoản sinh viên", "Danh sách tài khoản sinh viên nội trú.",
                         ["Tài khoản", "Mã SV", "Họ tên", "Giới tính", "Khoa / Lớp", "Email", "SĐT", "Phòng", "Trạng thái"],
                         studentUsers.Select(x => {
                             var s = x.student!;
@@ -751,14 +743,12 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         }).ToList(),
                         "Thêm sinh viên", "Cấp tài khoản đăng nhập cho sinh viên nội trú.",
                         [new("username", "Tên đăng nhập"), new("fullName", "Họ tên"), new("email", "Email", "email", false), new("password", "Mật khẩu", "password")]);
-                    // Force student role when creating from student tab
                     var studentRole = await db.roles.FirstOrDefaultAsync(r => r.code == "student");
                     if (studentRole != null)
                         model.Fields.Add(new FormFieldViewModel("roleId", "", "hidden", false, [new(studentRole.id.ToString(), "student")]));
                 }
                 else
                 {
-                    // TAB NHÂN VIÊN: users không có student record
                     var staffUsers = await db.users
                         .Include(x => x.user_roles).ThenInclude(x => x.role)
                         .Include(x => x.student)
@@ -766,7 +756,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         .OrderBy(x => x.username)
                         .ToListAsync();
 
-                    model = Build("users", "Tài khoản nhân viên", "Danh sách tài khoản ban quản lý và quản trị viên.",
+                    model = Build("users", "Tài khoản nhân viên", "Danh sách tài khoản ban quản lý.",
                         ["Tài khoản", "Họ tên", "Email", "SĐT", "Vai trò", "Đăng nhập cuối", "Trạng thái"],
                         staffUsers.Select(x => {
                             var actions = new List<RowActionViewModel>();
@@ -865,7 +855,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 var emergencyName = form["emergencyContactName"].ToString();
                 var emergencyPhone = form["emergencyContactPhone"].ToString();
 
-                // Lưu thông tin người liên hệ khẩn cấp vào hồ sơ sinh viên
                 var student = await db.students.FindAsync(studentId);
                 if (student is not null)
                 {
@@ -873,7 +862,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     if (!string.IsNullOrWhiteSpace(emergencyPhone)) student.emergency_contact_phone = emergencyPhone;
                 }
 
-                // Xử lý upload file minh chứng chính sách nếu có
                 var proofFilePath = "";
                 if (form.Files["proofFile"] is { Length: > 0 } file)
                 {
@@ -1146,11 +1134,9 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                                 var oldBedInfo = $"Giường {oldBed.bed_number} (P.{oldBed.room.room_number})";
                                 var newBedInfo = $"{freeBed.room.building.name} - P.{freeBed.room.room_number} (Giường {freeBed.bed_number})";
 
-                                // Giải phóng giường cũ
                                 oldBed.status = "available";
                                 if (oldBed.room.status == "full") oldBed.room.status = "available";
 
-                                // Nhận giường mới
                                 freeBed.status = "occupied";
                                 existingContract.bed_id = freeBed.id;
                                 existingContract.monthly_price = freeBed.room.monthly_price;
@@ -1196,7 +1182,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         freeBed.status = "occupied";
                         registration.status = "contracted";
 
-                        // TỰ ĐỘNG ĐÓNG PHÒNG KHI ĐÃ ĐẦY (NẾU KHÔNG BẢO TRÌ)
                         if (freeBed.room.status != "maintenance")
                         {
                             var remainingBeds = await db.beds.CountAsync(b => b.room_id == freeBed.room_id && b.status == "available" && b.id != freeBed.id);
@@ -1223,7 +1208,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         db.contracts.Add(newContract);
                         await db.SaveChangesAsync();
 
-                        // TẠO HÓA ĐƠN ĐẦU KỲ VỚI HẠN CHÓT 48H
                         var initInvoice = new invoice
                         {
                             invoice_code = "INV-" + DateTime.Now.ToString("yyyyMMdd") + "-" + Guid.NewGuid().ToString("N")[..4].ToUpperInvariant(),
@@ -1550,28 +1534,24 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     if (checkout.occupancy_record is not null) { checkout.occupancy_record.checked_out_at = DateTime.Now; checkout.occupancy_record.checked_out_by_user_id = UserId; checkout.occupancy_record.checkout_condition = "Đã ghi nhận khi trả phòng"; }
                     checkout.status = "expired";
                     checkout.bed.status = "available";
-                    // TỰ ĐỘNG MỞ PHÒNG NẾU TRƯỚC ĐÓ ĐẦY (KHÔNG TỰ MỞ NẾU ĐANG BẢO TRÌ THỦ CÔNG)
                     if (checkout.bed.room.status == "full")
                     {
                         checkout.bed.room.status = "available";
                     }
                     break;
                 case "room-maintenance":
-                    // BẢO TRÌ PHẢI ẤN THỦ CÔNG
                     var mRoom = await db.rooms.SingleAsync(x => x.id == id);
                     mRoom.status = "maintenance";
                     await db.SaveChangesAsync();
                     TempData["Notice"] = $"Đã chuyển phòng {mRoom.room_number} sang trạng thái bảo trì kỹ thuật (thao tác thủ công).";
                     break;
                 case "room-close":
-                    // ĐÓNG PHÒNG THỦ CÔNG (TẠM DỪNG TIẾP NHẬN / ĐÃ ĐẦY)
                     var cRoom = await db.rooms.SingleAsync(x => x.id == id);
                     cRoom.status = "full";
                     await db.SaveChangesAsync();
                     TempData["Notice"] = $"Đã đóng phòng {cRoom.room_number} (tạm dừng tiếp nhận sinh viên).";
                     break;
                 case "room-open":
-                    // MỞ PHÒNG PHẢI ẤN THỦ CÔNG
                     var oRoom = await db.rooms.Include(x => x.beds).SingleAsync(x => x.id == id);
                     var availBedsCount = oRoom.beds.Count(b => b.status == "available");
                     oRoom.status = availBedsCount == 0 ? "full" : "available";

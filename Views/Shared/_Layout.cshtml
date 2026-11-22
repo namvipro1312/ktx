@@ -72,30 +72,30 @@
     <meta name="theme-color" content="#1e293b" />
     <title>@(ViewData["Title"] ?? "Ký túc xá") · Quản lý Nội trú</title>
 
-    <!-- Google Fonts: Be Vietnam Pro -->
+    
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 
-    <!-- Tabler Core CSS & Tabler Icons -->
+    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/core@1.0.0-beta20/dist/css/tabler.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@@tabler/icons-webfont@latest/tabler-icons.min.css" />
 
-    <!-- Application CSS -->
+    
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body class="@(User.Identity?.IsAuthenticated == true ? "layout-fluid" : "d-flex flex-column bg-white")">
 @if (User.Identity?.IsAuthenticated == true)
 {
     <div class="page">
-        <!-- Sidebar Navigation (Tabler Vertical) -->
+        
         <aside class="navbar navbar-vertical navbar-expand-lg navbar-dark bg-dark border-end-0">
             <div class="container-fluid">
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Bật/tắt thanh điều hướng">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
-                <!-- Brand / Logo -->
+                
                 <h1 class="navbar-brand navbar-brand-autodark py-2 my-0">
                     <a asp-controller="Dormitory" asp-action="Index" class="d-flex align-items-center text-decoration-none text-white">
                         <span class="avatar avatar-sm bg-primary text-white rounded me-2">
@@ -108,7 +108,7 @@
                     </a>
                 </h1>
 
-                <!-- Mobile User Quick Avatar -->
+                
                 <div class="navbar-nav flex-row d-lg-none">
                     <div class="nav-item">
                         <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
@@ -119,9 +119,9 @@
                     </div>
                 </div>
 
-                <!-- Sidebar Body -->
+                
                 <div class="collapse navbar-collapse" id="sidebar-menu">
-                    <!-- User Campus Role Pill -->
+                    
                     <div class="px-3 py-2 my-2 rounded bg-dark-lt border border-white-10 d-flex align-items-center justify-content-between">
                         <span class="badge @(isStudent ? "bg-cyan-lt text-cyan" : "bg-primary-lt text-primary") fw-medium">
                             @(isStudent ? "Sinh viên Nội trú" : "Ban Quản trị KTX")
@@ -129,7 +129,7 @@
                         <span class="badge bg-secondary-lt text-white-50">CS-HN</span>
                     </div>
 
-                    <!-- Navigation Groups -->
+                    
                     <ul class="navbar-nav pt-lg-2">
                         @foreach (var group in nav.GroupBy(x => x.Group))
                         {
@@ -156,7 +156,7 @@
                         }
                     </ul>
 
-                    <!-- Sidebar Footer User Profile -->
+                    
                     <div class="mt-auto pt-3 border-top border-white-10">
                         <div class="d-flex align-items-center p-2 rounded bg-dark-lt">
                             <span class="avatar avatar-sm bg-primary text-white rounded-circle me-2 fw-bold">
@@ -177,21 +177,21 @@
             </div>
         </aside>
 
-        <!-- Main Workspace Shell -->
+        
         <div class="page-wrapper">
-            <!-- Topbar Header -->
+            
             <header class="navbar navbar-expand-md d-none d-lg-flex d-print-none border-bottom bg-white sticky-top py-2">
                 <div class="container-xl">
-                    <!-- Breadcrumb -->
+                    
                     <div class="d-flex align-items-center">
                         <span class="text-muted fs-5 me-2">Ký túc xá</span>
                         <span class="text-muted me-2">/</span>
                         <span class="fw-bold text-dark fs-4">@(string.IsNullOrWhiteSpace(ViewData["Title"]?.ToString()) ? "Tổng quan" : ViewData["Title"])</span>
                     </div>
 
-                    <!-- Topbar Right Actions -->
+                    
                     <div class="navbar-nav flex-row order-md-last ms-auto align-items-center">
-                        <!-- Date Badge -->
+                        
                         <div class="me-3">
                             <span class="badge bg-light text-secondary border px-3 py-2 fw-normal fs-6">
                                 <i class="ti ti-calendar me-1"></i>
@@ -199,7 +199,7 @@
                             </span>
                         </div>
 
-                        <!-- User Profile Chip -->
+                        
                         <div class="d-flex align-items-center me-3">
                             <span class="avatar avatar-sm bg-primary-lt text-primary rounded-circle fw-bold me-2">
                                 @(User.Identity?.Name?.Split(' ').LastOrDefault()?.FirstOrDefault() ?? 'Q')
@@ -210,7 +210,7 @@
                             </div>
                         </div>
 
-                        <!-- Direct Logout -->
+                        
                         <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
                             <button type="submit" class="btn btn-outline-secondary btn-sm" title="Đăng xuất khỏi hệ thống">
                                 <i class="ti ti-logout me-1"></i> Đăng xuất
@@ -220,10 +220,10 @@
                 </div>
             </header>
 
-            <!-- Page Body -->
+            
             <div class="page-body my-3">
                 <div class="container-xl">
-                    <!-- Notifications / Alerts -->
+                    
                     @if (TempData["Notice"] is string notice)
                     {
                         <div class="alert alert-success alert-dismissible fade show shadow-sm mb-3" role="alert">
@@ -245,7 +245,7 @@
                         </div>
                     }
 
-                    <!-- Core Page Content -->
+                    
                     @RenderBody()
                 </div>
             </div>
@@ -257,9 +257,8 @@ else
     @RenderBody()
 }
 
-<!-- Tabler Core JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/@@tabler/core@1.0.0-beta20/dist/js/tabler.min.js" defer></script>
-<!-- Chart.js for Analytics & Reports -->
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="~/js/site.js" asp-append-version="true" defer></script>
 @await RenderSectionAsync("Scripts", required: false)
