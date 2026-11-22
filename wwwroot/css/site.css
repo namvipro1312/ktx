@@ -400,9 +400,9 @@ body {
 }
 
 .bunk-bed-2d.bed-occupied {
-    background-color: #f1f5f9;
-    border-left: 4px solid #94a3b8;
-    opacity: 0.75;
+    background-color: #f8fafc;
+    border-left: 4px solid #64748b;
+    opacity: 1;
 }
 
 .bunk-bed-2d.bed-selected {

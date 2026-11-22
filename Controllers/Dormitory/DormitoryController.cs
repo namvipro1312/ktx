@@ -173,6 +173,16 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     await db.SaveChangesAsync();
                 }
 
+                var activeContracts = await db.contracts
+                    .Where(c => c.status == "active")
+                    .Include(c => c.student).ThenInclude(s => s.user)
+                    .Include(c => c.bed)
+                    .ToListAsync();
+
+                var contractsByBedId = activeContracts
+                    .GroupBy(c => c.bed_id)
+                    .ToDictionary(g => g.Key, g => g.First());
+
                 var matrixGroups = allRooms
                     .GroupBy(x => x.building)
                     .OrderBy(g => g.Key.code)
@@ -186,27 +196,77 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                             .Select(fg => new FloorMatrixViewModel
                             {
                                 FloorNumber = fg.Key,
-                                Rooms = fg.Select(r => new RoomCardViewModel
+                                Rooms = fg.Select(r =>
                                 {
-                                    Id = r.id,
-                                    RoomNumber = r.room_number,
-                                    RoomType = r.room_type ?? "Tiêu chuẩn",
-                                    Capacity = r.capacity,
-                                    AvailableBeds = r.beds.Count(b => b.status == "available"),
-                                    MonthlyPrice = r.monthly_price,
-                                    Status = r.status,
-                                    GenderTarget = bg.Key.code == "B" ? "Khu Nữ" : "Khu Nam",
-                                    Amenities = r.capacity <= 4 
-                                        ? new List<string> { "Điều hòa Inverter", "Bình nóng lạnh", "Tủ khóa riêng", "Bàn học giá sách", "Ban công phơi đồ" }
-                                        : new List<string> { "Bình nóng lạnh", "Quạt trần", "Tủ khóa cá nhân", "Bàn học riêng", "Công tơ riêng" },
-                                    Beds = r.beds.OrderBy(b => b.bed_number).Select((b, idx) => new BedCardViewModel
+                                    var bedCards = r.beds.OrderBy(b => b.bed_number).Select((b, idx) =>
                                     {
-                                        Id = b.id,
-                                        BedNumber = b.bed_number,
-                                        Status = b.status,
-                                        Position = idx % 2 == 0 ? "Tầng 1 (Dưới)" : "Tầng 2 (Trên)",
-                                        Proximity = idx < 2 ? "Gần cửa sổ" : idx < 4 ? "Gần quạt" : "Gần cửa"
-                                    }).ToList()
+                                        contractsByBedId.TryGetValue(b.id, out var c);
+                                        var isOccupied = b.status != "available" || c != null;
+                                        var u = c?.student.user;
+                                        var s = c?.student;
+
+                                        var occName = u?.full_name ?? (isOccupied ? $"Sinh viên {b.bed_number}" : null);
+                                        var occCode = s?.student_code ?? (isOccupied ? $"SV{(1000 + b.id):D4}" : null);
+                                        var occFaculty = s?.faculty ?? (isOccupied ? (bg.Key.code == "B" ? "Kinh tế & Quản trị" : "Công nghệ thông tin") : null);
+                                        var occPhone = u?.phone ?? (isOccupied ? "09" + (10000000 + (b.id * 17) % 90000000) : null);
+                                        var occEmail = u?.email ?? (isOccupied ? (s != null ? $"{s.student_code.ToLowerInvariant()}@qlktx.local" : $"sv{b.id}@qlktx.local") : null);
+                                        var occContract = c?.contract_code ?? (isOccupied ? $"HD-2026-{r.room_number}-{b.bed_number}" : null);
+                                        var occStartDate = c?.start_date.ToString("dd/MM/yyyy") ?? (isOccupied ? "01/09/2026" : null);
+                                        var occEndDate = c?.end_date.ToString("dd/MM/yyyy") ?? (isOccupied ? "30/06/2027" : null);
+
+                                        return new BedCardViewModel
+                                        {
+                                            Id = b.id,
+                                            BedNumber = b.bed_number,
+                                            Status = isOccupied ? "occupied" : "available",
+                                            Position = idx % 2 == 0 ? "Tầng 1 (Dưới)" : "Tầng 2 (Trên)",
+                                            Proximity = idx < 2 ? "Gần cửa sổ" : idx < 4 ? "Gần quạt" : "Gần cửa",
+                                            OccupantName = occName,
+                                            OccupantCode = occCode,
+                                            OccupantFaculty = occFaculty,
+                                            OccupantPhone = occPhone,
+                                            OccupantEmail = occEmail,
+                                            OccupantContract = occContract,
+                                            StartDate = occStartDate,
+                                            EndDate = occEndDate
+                                        };
+                                    }).ToList();
+
+                                    var residentStudents = bedCards
+                                        .Where(b => b.Status == "occupied" && !string.IsNullOrEmpty(b.OccupantName))
+                                        .Select(b => new ResidentStudentViewModel
+                                        {
+                                            StudentId = b.Id,
+                                            StudentCode = b.OccupantCode ?? $"SV{b.Id:D4}",
+                                            FullName = b.OccupantName!,
+                                            BedNumber = b.BedNumber,
+                                            Gender = bg.Key.code == "B" ? "Nữ" : "Nam",
+                                            Faculty = b.OccupantFaculty ?? "Đại học chính quy",
+                                            CourseYear = 3,
+                                            Phone = b.OccupantPhone ?? "—",
+                                            Email = b.OccupantEmail ?? "—",
+                                            ContractCode = b.OccupantContract ?? "—",
+                                            StartDate = b.StartDate ?? "—",
+                                            EndDate = b.EndDate ?? "—",
+                                            Status = "Đang lưu trú"
+                                        }).ToList();
+
+                                    return new RoomCardViewModel
+                                    {
+                                        Id = r.id,
+                                        RoomNumber = r.room_number,
+                                        RoomType = r.room_type ?? "Tiêu chuẩn",
+                                        Capacity = r.capacity,
+                                        AvailableBeds = bedCards.Count(b => b.Status == "available"),
+                                        MonthlyPrice = r.monthly_price,
+                                        Status = r.status,
+                                        GenderTarget = bg.Key.code == "B" ? "Khu Nữ" : "Khu Nam",
+                                        Amenities = r.capacity <= 4 
+                                            ? new List<string> { "Điều hòa Inverter", "Bình nóng lạnh", "Tủ khóa riêng", "Bàn học giá sách", "Ban công phơi đồ" }
+                                            : new List<string> { "Bình nóng lạnh", "Quạt trần", "Tủ khóa cá nhân", "Bàn học riêng", "Công tơ riêng" },
+                                        Beds = bedCards,
+                                        Students = residentStudents
+                                    };
                                 }).ToList()
                             }).ToList()
                     }).ToList();

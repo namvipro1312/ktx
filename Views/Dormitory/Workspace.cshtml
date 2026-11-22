@@ -241,7 +241,7 @@
 
                                                 <!-- Sơ đồ 2D nút bấm -->
                                                 <button type="button" class="btn btn-outline-primary btn-sm w-100 py-1 fs-6 mb-2 text-truncate" 
-                                                        onclick='showRoom2DBlueprint("@room.RoomNumber", "@room.RoomType", "@room.MonthlyPrice.ToString("N0")", "@room.GenderTarget", "@string.Join(",", room.Amenities)", @Html.Raw(System.Text.Json.JsonSerializer.Serialize(room.Beds)))'>
+                                                        onclick='showRoom2DBlueprint("@room.RoomNumber", "@room.RoomType", "@room.MonthlyPrice.ToString("N0")", "@room.GenderTarget", "@string.Join(",", room.Amenities)", @Html.Raw(System.Text.Json.JsonSerializer.Serialize(room.Beds)), @Html.Raw(System.Text.Json.JsonSerializer.Serialize(room.Students)))'>
                                                     <i class="ti ti-layout-grid me-1"></i> Sơ đồ 2D phòng
                                                 </button>
 
@@ -1997,7 +1997,7 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
      MODAL: SƠ ĐỒ 2D TRỰC QUAN PHÒNG & GIƯỜNG (VISUAL 2D ROOM BLUEPRINT)
      ========================================================================== -->
 <div class="modal fade" id="room2DBlueprintModal" tabindex="-1" aria-labelledby="room2DBlueprintLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-dark text-white py-3">
                 <div class="d-flex align-items-center">
@@ -2006,7 +2006,7 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
                     </span>
                     <div>
                         <h4 class="modal-title fw-bold text-white mb-0" id="room2DModalTitle">Sơ đồ 2D Phòng</h4>
-                        <small class="text-white-50" id="room2DModalSubtitle">Mô phỏng mặt bằng vị trí giường và tiện ích phòng</small>
+                        <small class="text-white-50" id="room2DModalSubtitle">Mô phỏng mặt bằng vị trí giường và danh sách sinh viên lưu trú</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -2017,7 +2017,8 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
                     <div class="d-flex flex-wrap gap-2 align-items-center">
                         <span class="badge bg-primary fs-6 px-2 py-1" id="room2DTypeBadge">4 người</span>
                         <span class="badge bg-teal fs-6 px-2 py-1" id="room2DGenderBadge">Khu Nam</span>
-                        <span class="text-success fw-bold fs-5" id="room2DPriceDisplay">650.000 ₫/tháng</span>
+                        <span class="badge bg-purple text-white fs-6 px-2 py-1" id="room2DOccupancyBadge"><i class="ti ti-users me-1"></i> <span id="room2DOccupancyCount">0/0</span> sinh viên</span>
+                        <span class="text-success fw-bold fs-5 ms-1" id="room2DPriceDisplay">650.000 ₫/tháng</span>
                     </div>
                     <div class="d-flex align-items-center gap-2 fs-6">
                         <span class="d-inline-flex align-items-center"><span class="badge bg-success me-1 p-1"></span> Trống</span>
@@ -2045,23 +2046,37 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
                     <div class="blueprint-door-label"><i class="ti ti-door me-1"></i> Cửa ra vào</div>
                 </div>
 
-                <!-- Amenities Checklist -->
-                <div class="mb-3">
-                    <h5 class="fw-bold text-dark mb-2"><i class="ti ti-sparkles me-1 text-warning"></i> Tiện ích & Trang thiết bị phòng:</h5>
-                    <div class="d-flex flex-wrap gap-2" id="blueprintAmenitiesContainer">
-                        <!-- Populated dynamically -->
-                    </div>
-                </div>
-
-                <!-- Selection Call-to-action -->
-                <div class="p-3 rounded bg-blue-lt border border-primary-subtle d-flex flex-wrap align-items-center justify-content-between">
+                <!-- Selection Call-to-action & Interactive Bed Detail -->
+                <div class="p-3 rounded bg-blue-lt border border-primary-subtle d-flex flex-wrap align-items-center justify-content-between mb-3">
                     <div>
                         <div class="text-dark fw-bold fs-5" id="blueprintSelectedBedTitle">Chưa chọn giường nào</div>
-                        <div class="text-muted fs-6" id="blueprintSelectedBedSubtitle">Nhấp vào một giường màu xanh lá trên sơ đồ để chọn giữ chỗ.</div>
+                        <div class="text-muted fs-6" id="blueprintSelectedBedSubtitle">Nhấp vào một giường trên sơ đồ để xem thông tin sinh viên hoặc chọn giữ chỗ giường trống.</div>
                     </div>
                     <a href="/Dormitory/Workspace?section=registrations#create-form" class="btn btn-primary" id="blueprintApplyBtn" style="display:none;">
                         <i class="ti ti-pencil-plus me-1"></i> Đăng ký giữ chỗ giường này
                     </a>
+                </div>
+
+                <!-- Resident Students Roster Section -->
+                <div class="card border border-primary-subtle shadow-sm mb-3">
+                    <div class="card-header bg-primary-lt py-2 px-3 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <i class="ti ti-users fs-3 text-primary me-2"></i>
+                            <h5 class="card-title fw-bold text-primary mb-0">Danh sách sinh viên đang lưu trú</h5>
+                        </div>
+                        <span class="badge bg-primary text-white" id="blueprintStudentRosterCount">0 sinh viên</span>
+                    </div>
+                    <div class="card-body p-0" id="blueprintStudentRosterContainer">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- Amenities Checklist -->
+                <div class="mb-2">
+                    <h5 class="fw-bold text-dark mb-2"><i class="ti ti-sparkles me-1 text-warning"></i> Tiện ích & Trang thiết bị phòng:</h5>
+                    <div class="d-flex flex-wrap gap-2" id="blueprintAmenitiesContainer">
+                        <!-- Populated dynamically -->
+                    </div>
                 </div>
             </div>
             <div class="modal-footer py-2">
@@ -2338,12 +2353,71 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
 <script>
     var currentSelectedBed = null;
 
-    function showRoom2DBlueprint(roomNum, roomType, priceStr, genderStr, amenitiesStr, bedsList) {
+    function showRoom2DBlueprint(roomNum, roomType, priceStr, genderStr, amenitiesStr, bedsList, studentsList) {
+        studentsList = studentsList || [];
+        bedsList = bedsList || [];
+
         document.getElementById('room2DModalTitle').textContent = 'Sơ đồ 2D Phòng ' + roomNum;
-        document.getElementById('room2DModalSubtitle').textContent = 'Mô phỏng mặt bằng không gian và định vị giường phòng ' + roomNum;
+        document.getElementById('room2DModalSubtitle').textContent = 'Mô phỏng mặt bằng không gian, định vị giường và danh sách sinh viên lưu trú phòng ' + roomNum;
         document.getElementById('room2DTypeBadge').textContent = roomType;
         document.getElementById('room2DGenderBadge').textContent = genderStr;
         document.getElementById('room2DPriceDisplay').textContent = priceStr + ' ₫/tháng';
+        document.getElementById('room2DOccupancyCount').textContent = studentsList.length + '/' + bedsList.length;
+        document.getElementById('blueprintStudentRosterCount').textContent = studentsList.length + ' sinh viên';
+
+        // Render Resident Students Table
+        var rosterContainer = document.getElementById('blueprintStudentRosterContainer');
+        rosterContainer.innerHTML = '';
+        if (studentsList.length === 0) {
+            rosterContainer.innerHTML = 
+                '<div class="p-3 text-center text-muted">' +
+                    '<i class="ti ti-bed-off fs-1 text-muted d-block mb-1"></i>' +
+                    '<div class="fw-medium text-dark">Phòng hiện tại chưa có sinh viên nào lưu trú.</div>' +
+                    '<small class="text-secondary">Tất cả ' + bedsList.length + ' giường trong phòng đều đang trống và sẵn sàng tiếp nhận đăng ký mới.</small>' +
+                '</div>';
+        } else {
+            var tableHtml = 
+                '<div class="table-responsive">' +
+                    '<table class="table table-vcenter table-hover table-striped mb-0 text-nowrap">' +
+                        '<thead class="bg-light text-secondary fs-6 text-uppercase">' +
+                            '<tr>' +
+                                '<th style="width: 75px;">Giường</th>' +
+                                '<th>Mã SV</th>' +
+                                '<th>Họ và tên</th>' +
+                                '<th>Giới tính</th>' +
+                                '<th>Khoa / Chuyên ngành</th>' +
+                                '<th>Số điện thoại</th>' +
+                                '<th>Mã hợp đồng</th>' +
+                                '<th>Thời hạn lưu trú</th>' +
+                                '<th>Trạng thái</th>' +
+                            '</tr>' +
+                        '</thead>' +
+                        '<tbody>';
+
+            studentsList.forEach(function(s) {
+                var initial = (s.FullName || 'S').trim().charAt(0);
+                tableHtml += 
+                    '<tr id="student-row-' + s.BedNumber + '">' +
+                        '<td><span class="badge bg-dark text-white fw-bold"><i class="ti ti-bed me-1"></i>' + s.BedNumber + '</span></td>' +
+                        '<td><span class="badge bg-blue-lt fw-medium">' + (s.StudentCode || '—') + '</span></td>' +
+                        '<td>' +
+                            '<div class="d-flex align-items-center">' +
+                                '<span class="avatar avatar-xs bg-primary-lt text-primary rounded-circle me-2 fw-bold">' + initial + '</span>' +
+                                '<strong class="text-dark">' + s.FullName + '</strong>' +
+                            '</div>' +
+                        '</td>' +
+                        '<td><span class="badge bg-teal-lt">' + (s.Gender || '—') + '</span></td>' +
+                        '<td><span class="text-secondary">' + (s.Faculty || '—') + '</span></td>' +
+                        '<td>' + (s.Phone && s.Phone !== '—' ? ('<a href="tel:' + s.Phone + '" class="text-body text-decoration-none"><i class="ti ti-phone text-muted me-1"></i>' + s.Phone + '</a>') : '—') + '</td>' +
+                        '<td><code class="text-primary">' + (s.ContractCode || '—') + '</code></td>' +
+                        '<td><span class="text-muted fs-6"><i class="ti ti-calendar me-1"></i>' + (s.StartDate || '—') + ' → ' + (s.EndDate || '—') + '</span></td>' +
+                        '<td><span class="badge bg-success-lt text-success"><i class="ti ti-circle-check me-1"></i> ' + (s.Status || 'Đang lưu trú') + '</span></td>' +
+                    '</tr>';
+            });
+
+            tableHtml += '</tbody></table></div>';
+            rosterContainer.innerHTML = tableHtml;
+        }
 
         // Render Amenities
         var amenContainer = document.getElementById('blueprintAmenitiesContainer');
@@ -2374,7 +2448,7 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
             var pos = bed.Position || (idx % 2 === 0 ? 'Tầng 1 (Dưới)' : 'Tầng 2 (Trên)');
             var prox = bed.Proximity || (idx < 2 ? 'Cạnh cửa sổ' : (idx < 4 ? 'Gần quạt' : 'Cạnh cửa'));
 
-            bedCard.innerHTML =
+            var cardHtml = 
                 '<div class="d-flex justify-content-between align-items-center mb-1">' +
                     '<strong class="fs-4 text-dark"><i class="ti ti-bed me-1 text-primary"></i> ' + bed.BedNumber + '</strong>' +
                     '<span class="badge ' + (isAvail ? 'bg-success text-white' : 'bg-secondary text-white') + ' fs-6 px-1">' +
@@ -2384,17 +2458,45 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
                 '<div class="text-muted fs-6 mb-1"><i class="ti ti-stairs me-1"></i> ' + pos + '</div>' +
                 '<div class="text-secondary fs-6"><i class="ti ti-map-pin me-1"></i> ' + prox + '</div>';
 
-            if (isAvail) {
-                bedCard.onclick = function() {
-                    // Deselect previous
-                    document.querySelectorAll('.bunk-bed-2d').forEach(function(el) {
-                        el.classList.remove('bed-selected');
-                    });
-                    bedCard.classList.add('bed-selected');
-                    currentSelectedBed = bed;
-                    updateSelectedBedUI(bed, roomNum);
-                };
+            if (!isAvail && bed.OccupantName) {
+                cardHtml += 
+                    '<div class="mt-2 pt-2 border-top border-secondary-subtle">' +
+                        '<div class="fw-bold text-dark fs-6 text-truncate" title="' + bed.OccupantName + '">' +
+                            '<i class="ti ti-user me-1 text-primary"></i> ' + bed.OccupantName +
+                        '</div>' +
+                        '<div class="text-muted fs-6 text-truncate">' +
+                            '<span class="badge bg-secondary-lt text-secondary px-1 me-1">' + (bed.OccupantCode || 'SV') + '</span>' +
+                            (bed.OccupantFaculty || '') +
+                        '</div>' +
+                    '</div>';
+            } else if (isAvail) {
+                cardHtml += 
+                    '<div class="mt-2 pt-1 text-success fs-6 fw-medium text-truncate">' +
+                        '<i class="ti ti-hand-click me-1"></i> Nhấp để chọn' +
+                    '</div>';
             }
+
+            bedCard.innerHTML = cardHtml;
+
+            bedCard.onclick = function() {
+                // Deselect previous
+                document.querySelectorAll('.bunk-bed-2d').forEach(function(el) {
+                    el.classList.remove('bed-selected');
+                });
+                bedCard.classList.add('bed-selected');
+                currentSelectedBed = bed;
+                updateSelectedBedUI(bed, roomNum);
+
+                // Highlight corresponding student row in table if occupied
+                document.querySelectorAll('#blueprintStudentRosterContainer tr').forEach(function(r) {
+                    r.classList.remove('table-primary');
+                });
+                var targetRow = document.getElementById('student-row-' + bed.BedNumber);
+                if (targetRow) {
+                    targetRow.classList.add('table-primary');
+                    targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            };
 
             col.appendChild(bedCard);
             bedsContainer.appendChild(col);
@@ -2410,13 +2512,19 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
         var btnEl = document.getElementById('blueprintApplyBtn');
 
         if (bed) {
-            titleEl.textContent = 'Bạn đang chọn: Giường ' + bed.BedNumber + ' (Phòng ' + roomNum + ')';
-            subEl.textContent = (bed.Position || 'Tầng dưới') + ' · ' + (bed.Proximity || 'Gần cửa sổ') + ' · Trạng thái: Sẵn sàng đăng ký';
-            btnEl.style.display = 'inline-flex';
-            btnEl.href = '/Dormitory/Workspace?section=registrations#create-form';
+            if (bed.Status === 'available') {
+                titleEl.innerHTML = '<span class="text-success"><i class="ti ti-check me-1"></i> Đang chọn: Giường ' + bed.BedNumber + ' (Phòng ' + roomNum + ')</span>';
+                subEl.textContent = (bed.Position || 'Tầng dưới') + ' · ' + (bed.Proximity || 'Gần cửa sổ') + ' · Trạng thái: Sẵn sàng đăng ký giữ chỗ';
+                btnEl.style.display = 'inline-flex';
+                btnEl.href = '/Dormitory/Workspace?section=registrations#create-form';
+            } else {
+                titleEl.innerHTML = '<span class="text-primary"><i class="ti ti-user me-1"></i> Giường ' + bed.BedNumber + ':</span> ' + (bed.OccupantName || 'Đã có người ở');
+                subEl.innerHTML = '<span class="badge bg-secondary me-1">Đang lưu trú</span> Mã SV: <strong>' + (bed.OccupantCode || '—') + '</strong> · Khoa: ' + (bed.OccupantFaculty || '—') + (bed.OccupantPhone && bed.OccupantPhone !== '—' ? (' · SĐT: ' + bed.OccupantPhone) : '') + (bed.OccupantContract && bed.OccupantContract !== '—' ? (' · HĐ: <code>' + bed.OccupantContract + '</code>') : '');
+                btnEl.style.display = 'none';
+            }
         } else {
             titleEl.textContent = 'Chưa chọn giường nào';
-            subEl.textContent = 'Nhấp vào một giường màu xanh lá trên sơ đồ để chọn giữ chỗ.';
+            subEl.textContent = 'Nhấp vào một giường trên sơ đồ để xem thông tin sinh viên hoặc chọn giữ chỗ giường trống.';
             btnEl.style.display = 'none';
         }
     }

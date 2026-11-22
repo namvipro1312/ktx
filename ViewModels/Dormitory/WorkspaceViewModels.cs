@@ -200,6 +200,7 @@ public sealed class RoomCardViewModel
     public string GenderTarget { get; init; } = "Nam";
     public List<string> Amenities { get; init; } = [];
     public List<BedCardViewModel> Beds { get; init; } = [];
+    public List<ResidentStudentViewModel> Students { get; init; } = [];
 }
 
 public sealed class BedCardViewModel
@@ -210,6 +211,30 @@ public sealed class BedCardViewModel
     public string Position { get; init; } = "Tầng 1 (Dưới)";
     public string Proximity { get; init; } = "Gần cửa sổ";
     public string? OccupantName { get; init; }
+    public string? OccupantCode { get; init; }
+    public string? OccupantFaculty { get; init; }
+    public string? OccupantPhone { get; init; }
+    public string? OccupantEmail { get; init; }
+    public string? OccupantContract { get; init; }
+    public string? StartDate { get; init; }
+    public string? EndDate { get; init; }
+}
+
+public sealed class ResidentStudentViewModel
+{
+    public long StudentId { get; init; }
+    public string StudentCode { get; init; } = "";
+    public string FullName { get; init; } = "";
+    public string BedNumber { get; init; } = "";
+    public string? Gender { get; init; }
+    public string? Faculty { get; init; }
+    public short? CourseYear { get; init; }
+    public string? Phone { get; init; }
+    public string? Email { get; init; }
+    public string? ContractCode { get; init; }
+    public string? StartDate { get; init; }
+    public string? EndDate { get; init; }
+    public string Status { get; init; } = "Đang lưu trú";
 }
 
 public sealed class RegistrationStatsViewModel
