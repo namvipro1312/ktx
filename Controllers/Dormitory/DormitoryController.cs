@@ -13,11 +13,9 @@ namespace QLKTX.Controllers;
 public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> hasher) : Controller
 {
     private long UserId => long.TryParse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value, out var id) ? id : 0;
-    private bool IsStudent => User.IsInRole("student") && !User.IsInRole("system_admin") && !User.IsInRole("dorm_manager");
-    private bool IsAdmin => User.IsInRole("system_admin") || User.IsInRole("dorm_manager");
-    private bool IsSystemAdmin => User.IsInRole("system_admin");
-    private bool IsAccountant => User.IsInRole("accountant");
-    private bool IsMaintenance => User.IsInRole("maintenance_staff");
+    private bool IsStudent => User.IsInRole("student");
+    private bool IsAdmin => !IsStudent;
+    private bool IsSystemAdmin => IsAdmin;
 
     public async Task<IActionResult> Index()
     {
@@ -31,19 +29,13 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
             contracts = contracts.Where(x => x.student_id == studentId);
             repairs = repairs.Where(x => x.student_id == studentId);
         }
-        else if (!IsAdmin)
-        {
-            registrations = registrations.Where(_ => false);
-            contracts = contracts.Where(_ => false);
-            if (!IsMaintenance) repairs = repairs.Where(_ => false);
-        }
         var pendingRegistrations = await registrations.CountAsync(x => x.status == "pending");
         var activeContracts = await contracts.CountAsync(x => x.status == "active");
         var openRepairs = await repairs.CountAsync(x => x.status == "submitted" || x.status == "accepted" || x.status == "in_progress");
         var balances = db.v_invoice_balances.AsQueryable();
         if (studentId is not null)
             balances = balances.Where(x => db.contracts.Any(c => c.id == x.contract_id && c.student_id == studentId));
-        var outstanding = IsMaintenance ? 0m : await balances.SumAsync(x => x.balance_amount ?? 0m);
+        var outstanding = await balances.SumAsync(x => x.balance_amount ?? 0m);
         var stations = IsStudent
             ? new List<StationViewModel>
             {
@@ -52,10 +44,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 new("services", "Dịch vụ", await db.service_subscriptions.CountAsync(s => s.contract.student_id == studentId && s.status == "active"), "amber"),
                 new("payments", "Thanh toán", await balances.CountAsync(x => (x.balance_amount ?? 0m) > 0m), "green")
             }
-            : IsAccountant && !IsAdmin
-            ? new List<StationViewModel> { new("payments", "Cần thu", await balances.CountAsync(x => (x.balance_amount ?? 0m) > 0m), "green"), new("payments", "Đã phát hành", await db.invoices.CountAsync(x => x.status == "issued"), "blue") }
-            : IsMaintenance && !IsAdmin
-            ? new List<StationViewModel> { new("repairs", "Mới gửi", await repairs.CountAsync(x => x.status == "submitted"), "red"), new("repairs", "Đang xử lý", await repairs.CountAsync(x => x.status == "accepted" || x.status == "in_progress"), "amber") }
             : new List<StationViewModel>
             {
                 new("registrations", "Chờ duyệt", pendingRegistrations, "red"),
@@ -121,18 +109,6 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 }
             }
         }
-        else if (IsAccountant && !IsAdmin)
-        {
-            var due = await db.v_invoice_balances.Where(x => (x.balance_amount ?? 0m) > 0m).OrderBy(x => x.due_date).Take(4).ToListAsync();
-            tasks.AddRange(due.Select(x => new DashboardTaskViewModel(x.invoice_code, $"Hạn {x.due_date:dd/MM/yyyy} · còn {x.balance_amount ?? 0m:N0} ₫", StatusText(x.status), "/Dormitory/Workspace?section=payments")));
-            if (!tasks.Any()) tasks.Add(new("Không còn số dư cần theo dõi", "Các hóa đơn hiện đã cân đối.", "Đã cân đối", "/Dormitory/Workspace?section=reports"));
-        }
-        else if (IsMaintenance && !IsAdmin)
-        {
-            var repairList = await repairs.OrderByDescending(x => x.priority == "urgent").ThenBy(x => x.reported_at).Take(5).ToListAsync();
-            tasks.AddRange(repairList.Select(x => new DashboardTaskViewModel(x.title, $"{x.request_code} · {StatusText(x.priority)}", StatusText(x.status), "/Dormitory/Workspace?section=repairs")));
-            if (!tasks.Any()) tasks.Add(new("Chưa có yêu cầu sửa chữa", "Yêu cầu mới sẽ hiện tại đây.", "Đã cân đối", "/Dormitory/Workspace?section=repairs"));
-        }
         else
         {
             var pending = await db.room_registrations.Include(x => x.student).ThenInclude(x => x.user).Where(x => x.status == "pending").OrderBy(x => x.submitted_at).Take(4).ToListAsync();
@@ -162,7 +138,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
     {
         section = section.ToLowerInvariant();
         if (IsStudent && section is not ("rooms" or "registrations" or "contracts" or "services" or "repairs" or "rules" or "payments" or "deposits" or "guests" or "violations" or "refunds" or "notifications")) return Forbid();
-        if (!IsStudent && !IsAdmin && !((IsMaintenance && section is ("repairs" or "rooms" or "assets" or "meters" or "utilities" or "notifications")) || (IsAccountant && section is ("payments" or "deposits" or "refunds" or "reports" or "notifications")))) return Forbid();
+        if (!IsStudent && !IsAdmin) return Forbid();
         if (section == "users" && !IsSystemAdmin) return Forbid();
         long? studentId = IsStudent ? await StudentId() : null;
         var model = new ModuleViewModel { Section = section };
@@ -541,7 +517,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 break;
             case "utilities":
                 var readings = await db.utility_readings.Include(x => x.meter).ThenInclude(x => x.room).ThenInclude(x => x.building).Include(x => x.meter).ThenInclude(x => x.service).OrderByDescending(x => x.reading_date).Take(200).ToListAsync();
-                model = Build("utilities", "Chỉ số và tiêu thụ", "Ghi chỉ số mới để tính sản lượng, thành tiền và phân bổ đều cho các hợp đồng đang ở trong phòng.", ["Ngày ghi", "Đồng hồ / phòng", "Dịch vụ", "Chỉ số cũ → mới", "Tiêu thụ", "Đơn giá", "Thành tiền"], readings.Select(x => Row(x.id, [x.reading_date.ToString("dd/MM/yyyy"), $"{x.meter.meter_code} · {x.meter.room.building.code} {x.meter.room.room_number}", x.meter.service.name, $"{x.previous_value:N3} → {x.current_value:N3}", x.consumption.ToString("N3"), $"{x.unit_price:N0} ₫", $"{x.total_amount:N0} ₫"], "report")).ToList(), IsAdmin || IsMaintenance ? "Ghi chỉ số mới" : null, "Sản lượng được chia đều cho hợp đồng đang có hiệu lực trong phòng; các lượt sử dụng được đưa vào hóa đơn ở mục Thanh toán.", IsAdmin || IsMaintenance ? [new("meterId", "Đồng hồ", "select", true, await db.utility_meters.Where(x => x.is_active).Include(x => x.room).ThenInclude(x => x.building).Include(x => x.service).Select(x => new SelectOptionViewModel(x.id.ToString(), x.meter_code + " · " + x.room.building.code + " " + x.room.room_number + " · " + x.service.name)).ToListAsync()), new("readingDate", "Ngày ghi", "date"), new("currentValue", "Chỉ số mới", "number"), new("note", "Ghi chú", "text", false)] : []);
+                model = Build("utilities", "Chỉ số và tiêu thụ", "Ghi chỉ số mới để tính sản lượng, thành tiền và phân bổ đều cho các hợp đồng đang ở trong phòng.", ["Ngày ghi", "Đồng hồ / phòng", "Dịch vụ", "Chỉ số cũ → mới", "Tiêu thụ", "Đơn giá", "Thành tiền"], readings.Select(x => Row(x.id, [x.reading_date.ToString("dd/MM/yyyy"), $"{x.meter.meter_code} · {x.meter.room.building.code} {x.meter.room.room_number}", x.meter.service.name, $"{x.previous_value:N3} → {x.current_value:N3}", x.consumption.ToString("N3"), $"{x.unit_price:N0} ₫", $"{x.total_amount:N0} ₫"], "report")).ToList(), IsAdmin ? "Ghi chỉ số mới" : null, "Sản lượng được chia đều cho hợp đồng đang có hiệu lực trong phòng; các lượt sử dụng được đưa vào hóa đơn ở mục Thanh toán.", IsAdmin ? [new("meterId", "Đồng hồ", "select", true, await db.utility_meters.Where(x => x.is_active).Include(x => x.room).ThenInclude(x => x.building).Include(x => x.service).Select(x => new SelectOptionViewModel(x.id.ToString(), x.meter_code + " · " + x.room.building.code + " " + x.room.room_number + " · " + x.service.name)).ToListAsync()), new("readingDate", "Ngày ghi", "date"), new("currentValue", "Chỉ số mới", "number"), new("note", "Ghi chú", "text", false)] : []);
                 break;
             case "violations":
                 var violationQuery = db.student_violations.Include(x => x.student).ThenInclude(x => x.user).Include(x => x.rule).Include(x => x.violation_invoice_item).AsQueryable();
@@ -553,7 +529,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 var refundQuery = db.payment_refunds.Include(x => x.payment).ThenInclude(x => x.invoice).ThenInclude(x => x.contract).ThenInclude(x => x.student).ThenInclude(x => x.user).AsQueryable();
                 if (studentId is not null) refundQuery = refundQuery.Where(x => x.payment.invoice.contract.student_id == studentId);
                 var refunds = await refundQuery.OrderByDescending(x => x.created_at).Take(200).ToListAsync();
-                model = Build("refunds", "Yêu cầu hoàn tiền", "Sinh viên gửi yêu cầu; nhân viên chỉ ghi nhận hoàn thành sau khi đã hoàn tiền thực tế ngoài hệ thống.", ["Mã yêu cầu", "Khoản thu", "Sinh viên", "Số tiền", "Lý do", "Ngày gửi", "Trạng thái"], refunds.Select(x => Row(x.id, [x.refund_code, x.payment.payment_code, x.payment.invoice.contract.student.user.full_name, $"{x.amount:N0} ₫", x.reason ?? "—", x.created_at.ToString("dd/MM/yyyy"), StatusText(x.status)], x.status, !IsStudent && x.status == "pending" ? [new RowActionViewModel("Ghi nhận đã hoàn", "refund-complete", true), new RowActionViewModel("Từ chối", "refund-reject")] : [])).ToList(), IsStudent ? "Yêu cầu hoàn tiền" : null, "Yêu cầu không tự chuyển tiền; kế toán đối chiếu và xử lý thực tế trước khi ghi nhận hoàn tất.", IsStudent ? [new("paymentId", "Khoản đã thu", "select", true, await db.payments.Where(x => x.status == "completed" && x.invoice.contract.student_id == studentId).Include(x => x.invoice).ThenInclude(x => x.contract).Select(x => new SelectOptionViewModel(x.id.ToString(), x.payment_code + " · " + x.amount.ToString("N0") + " ₫")).ToListAsync()), new("amount", "Số tiền đề nghị (₫)", "number"), new("reason", "Lý do", "textarea")] : []);
+                model = Build("refunds", "Yêu cầu hoàn tiền", "Sinh viên gửi yêu cầu; nhân viên chỉ ghi nhận hoàn thành sau khi đã hoàn tiền thực tế ngoài hệ thống.", ["Mã yêu cầu", "Khoản thu", "Sinh viên", "Số tiền", "Lý do", "Ngày gửi", "Trạng thái"], refunds.Select(x => Row(x.id, [x.refund_code, x.payment.payment_code, x.payment.invoice.contract.student.user.full_name, $"{x.amount:N0} ₫", x.reason ?? "—", x.created_at.ToString("dd/MM/yyyy"), StatusText(x.status)], x.status, !IsStudent && x.status == "pending" ? [new RowActionViewModel("Ghi nhận đã hoàn", "refund-complete", true), new RowActionViewModel("Từ chối", "refund-reject")] : [])).ToList(), IsStudent ? "Yêu cầu hoàn tiền" : null, "Yêu cầu không tự chuyển tiền; ban quản lý đối chiếu và xử lý thực tế trước khi ghi nhận hoàn tất.", IsStudent ? [new("paymentId", "Khoản đã thu", "select", true, await db.payments.Where(x => x.status == "completed" && x.invoice.contract.student_id == studentId).Include(x => x.invoice).ThenInclude(x => x.contract).Select(x => new SelectOptionViewModel(x.id.ToString(), x.payment_code + " · " + x.amount.ToString("N0") + " ₫")).ToListAsync()), new("amount", "Số tiền đề nghị (₫)", "number"), new("reason", "Lý do", "textarea")] : []);
                 break;
             case "notifications":
                 var notificationQuery = db.notifications.Where(x => x.user_id == UserId).OrderByDescending(x => x.created_at);
@@ -561,7 +537,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 model = Build("notifications", "Thông báo của tôi", "Lịch sử thông báo riêng của tài khoản đang đăng nhập.", ["Tiêu đề", "Nội dung", "Phân loại", "Ngày gửi", "Trạng thái"], notices.Select(x => Row(x.id, [x.title, x.message, x.notification_type, x.created_at.ToString("dd/MM/yyyy HH:mm"), x.read_at is null ? "Chưa đọc" : $"Đã đọc · {x.read_at:dd/MM/yyyy HH:mm}"], x.read_at is null ? "pending" : "completed", x.read_at is null ? [new RowActionViewModel("Đánh dấu đã đọc", "notification-read", true)] : [])).ToList(), IsAdmin ? "Gửi thông báo" : null, null, IsAdmin ? [new("userId", "Người nhận", "select", true, await db.users.Where(x => x.is_active).OrderBy(x => x.full_name).Select(x => new SelectOptionViewModel(x.id.ToString(), x.full_name + " · " + x.username)).ToListAsync()), new("title", "Tiêu đề"), new("message", "Nội dung", "textarea"), new("notificationType", "Phân loại", "select", true, [new("general", "Thông báo chung"), new("billing", "Tài chính"), new("operation", "Vận hành")])] : []);
                 break;
             case "reports":
-                if (!(IsAdmin || IsAccountant)) return Forbid();
+                if (!IsAdmin) return Forbid();
                 var buildingsReport = await db.v_building_occupancies.OrderBy(x => x.building_code).ToListAsync();
                 var monthly = await db.v_monthly_invoice_summaries.OrderBy(x => x.billing_month).Take(12).ToListAsync();
                 var repairSummary = await db.v_repair_summaries.ToListAsync();
@@ -732,7 +708,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 db.room_registrations.Add(newRegistration);
                 await db.SaveChangesAsync();
                 Audit("create", section, newRegistration.id, "room registration submitted");
-                await NotifyRole("dorm_manager", "Có hồ sơ đăng ký phòng mới", $"{newRegistration.registration_code} đang chờ xét duyệt.", "operation", "room_registration", newRegistration.id);
+                await NotifyRole("system_admin", "Có hồ sơ đăng ký phòng mới", $"{newRegistration.registration_code} đang chờ xét duyệt.", "operation", "room_registration", newRegistration.id);
                 await db.SaveChangesAsync();
                 return Done("Đã nộp đơn đăng ký phòng KTX thành công! Ban quản lý sẽ sớm xét duyệt hồ sơ của bạn.", section);
             }
@@ -779,9 +755,9 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 db.payment_refunds.Add(refund);
                 await db.SaveChangesAsync();
                 Audit("refund-request", section, refund.id, refund.refund_code);
-                await NotifyRole("accountant", "Có yêu cầu hoàn tiền", $"{refund.refund_code} · {refund.amount:N0} ₫ đang chờ xem xét.", "billing", "payment_refund", refund.id);
+                await NotifyRole("system_admin", "Có yêu cầu hoàn tiền", $"{refund.refund_code} · {refund.amount:N0} ₫ đang chờ xem xét.", "billing", "payment_refund", refund.id);
                 await db.SaveChangesAsync();
-                return Done("Đã gửi yêu cầu hoàn tiền để kế toán xem xét.", section);
+                return Done("Đã gửi yêu cầu hoàn tiền để ban quản lý xem xét.", section);
             }
             if (section == "services" && IsStudent)
             {
@@ -796,7 +772,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 return Done("Đã đăng ký dịch vụ theo hợp đồng.", section);
             }
             if (IsStudent && section is not ("services" or "repairs")) return Forbid();
-            if (!IsAdmin && !IsStudent && !(IsAccountant && section is ("payments" or "deposits" or "refunds")) && !(IsMaintenance && section is ("repairs" or "meters" or "utilities"))) return Forbid();
+            if (!IsAdmin && !IsStudent) return Forbid();
             if (section is ("users" or "buildings" or "rooms" or "rules" or "services" or "assets" or "violations" or "notifications") && !IsAdmin) return Forbid();
             switch (section)
             {
@@ -935,19 +911,19 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
         if (operation == "open-deposits") return RedirectToAction(nameof(Workspace), new { section = "deposits" });
         if (IsStudent && operation is ("approve" or "reject" or "request-changes" or "waitlist" or "revoke-expired" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "room-close" or "payment-confirm" or "deposit-confirm" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "guest-approve" or "guest-reject" or "guest-arrive" or "guest-depart" or "asset-check" or "meter-toggle" or "violation-review" or "violation-resolve" or "violation-invoice" or "refund-complete" or "refund-reject" or "auto-allocate-all" or "room-edit" or "contract-amend" or "user-edit-role" or "user-reset-pwd")) return Forbid();
         if (operation.StartsWith("guest-") && operation != "guest-cancel" && !IsAdmin) return Forbid();
-        if (operation == "asset-check" && !(IsAdmin || IsMaintenance)) return Forbid();
+        if (operation == "asset-check" && !IsAdmin) return Forbid();
         if (operation == "meter-toggle" && !IsAdmin) return Forbid();
-        if (operation.StartsWith("violation-") && !(IsAdmin || IsAccountant)) return Forbid();
-        if (operation.StartsWith("refund-") && !(IsAdmin || IsAccountant)) return Forbid();
-        if (operation == "notification-read" && IsStudent == false && !IsAdmin && !IsAccountant && !IsMaintenance) return Forbid();
+        if (operation.StartsWith("violation-") && !IsAdmin) return Forbid();
+        if (operation.StartsWith("refund-") && !IsAdmin) return Forbid();
+        if (operation == "notification-read" && !IsStudent && !IsAdmin) return Forbid();
         try
         {
             if (operation is "approve" or "reject" or "request-changes" or "waitlist" or "revoke-expired" or "sign" or "cancel-contract" or "checkin" or "checkout" or "room-maintenance" or "room-open" or "room-close" or "user-toggle" or "repair-accept" or "repair-progress" or "repair-complete" or "repair-reject" or "auto-allocate-all")
             {
-                if (operation.StartsWith("repair-") ? !(IsAdmin || IsMaintenance) : !IsAdmin) return Forbid();
+                if (!IsAdmin) return Forbid();
             }
-            if (operation == "payment-confirm" && !(IsAdmin || IsAccountant)) return Forbid();
-            if (operation == "deposit-confirm" && !(IsAdmin || IsAccountant)) return Forbid();
+            if (operation == "payment-confirm" && !IsAdmin) return Forbid();
+            if (operation == "deposit-confirm" && !IsAdmin) return Forbid();
             switch (operation)
             {
                 case "approve":
@@ -1303,7 +1279,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                     myContract.signed_at = DateTime.Now;
                     myContract.terms = "Sinh viên đã ký điện tử cam kết thực hiện đầy đủ nội quy KTX.";
                     await db.SaveChangesAsync();
-                    await NotifyRole("dorm_manager", "Sinh viên đã ký hợp đồng online", $"{User.Identity?.Name} đã ký cam kết hợp đồng {myContract.contract_code}.", "operation", "contract", id);
+                    await NotifyRole("system_admin", "Sinh viên đã ký hợp đồng online", $"{User.Identity?.Name} đã ký cam kết hợp đồng {myContract.contract_code}.", "operation", "contract", id);
                     await db.SaveChangesAsync();
                     return Done("Đã ký xác nhận hợp đồng điện tử thành công.", section);
                 case "student-checkin":
@@ -1321,7 +1297,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                             created_at = DateTime.Now
                         });
                         await db.SaveChangesAsync();
-                        await NotifyRole("dorm_manager", "Sinh viên đã nhận phòng", $"{User.Identity?.Name} đã xác nhận nhận phòng theo hợp đồng {activeContract.contract_code}.", "operation", "contract", id);
+                        await NotifyRole("system_admin", "Sinh viên đã nhận phòng", $"{User.Identity?.Name} đã xác nhận nhận phòng theo hợp đồng {activeContract.contract_code}.", "operation", "contract", id);
                         await db.SaveChangesAsync();
                     }
                     return Done("Đã xác nhận nhận phòng và ký nhận bàn giao tài sản phòng.", section);
@@ -1608,7 +1584,8 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
     }
     private async Task NotifyRole(string roleCode, string title, string message, string kind, string? entityType = null, long? entityId = null)
     {
-        var recipients = await db.user_roles.Where(x => x.role.code == roleCode && x.user.is_active).Select(x => x.user_id).Distinct().ToListAsync();
+        var targetRole = roleCode is "dorm_manager" or "accountant" or "maintenance_staff" ? "system_admin" : roleCode;
+        var recipients = await db.user_roles.Where(x => x.role.code == targetRole && x.user.is_active).Select(x => x.user_id).Distinct().ToListAsync();
         foreach (var recipient in recipients) Notify(recipient, title, message, kind, entityType, entityId);
     }
     private static string Text(IFormCollection form, string key) => form[key].ToString().Trim();

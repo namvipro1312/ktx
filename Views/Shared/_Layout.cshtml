@@ -24,10 +24,8 @@
     };
 }
 @{
-    var isStudent = User.IsInRole("student") && !User.IsInRole("system_admin") && !User.IsInRole("dorm_manager");
-    var isAdmin = User.IsInRole("system_admin") || User.IsInRole("dorm_manager");
-    var isAccountant = User.IsInRole("accountant");
-    var isMaintenance = User.IsInRole("maintenance_staff");
+    var isStudent = User.IsInRole("student");
+    var isAdmin = !isStudent;
     var active = ViewData["ActiveSection"]?.ToString() ?? "";
     var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
     var nav = isStudent
@@ -129,7 +127,7 @@
                     <!-- User Campus Role Pill -->
                     <div class="px-3 py-2 my-2 rounded bg-dark-lt border border-white-10 d-flex align-items-center justify-content-between">
                         <span class="badge @(isStudent ? "bg-cyan-lt text-cyan" : "bg-primary-lt text-primary") fw-medium">
-                            @(isStudent ? "Sinh viên Nội trú" : isAdmin ? "Ban Quản trị KTX" : isAccountant ? "Kế toán Tài chính" : "Kỹ thuật & Bảo trì")
+                            @(isStudent ? "Sinh viên Nội trú" : "Ban Quản trị KTX")
                         </span>
                         <span class="badge bg-secondary-lt text-white-50">CS-HN</span>
                     </div>
@@ -138,9 +136,7 @@
                     <ul class="navbar-nav pt-lg-2">
                         @foreach (var group in nav.GroupBy(x => x.Group))
                         {
-                            var visible = isStudent 
-                                ? group.ToList() 
-                                : group.Where(x => isAdmin || x.Key == "notifications" || (isAccountant && x.Key is ("" or "payments" or "deposits" or "refunds" or "reports")) || (isMaintenance && x.Key is ("" or "rooms" or "repairs" or "assets" or "meters" or "utilities"))).ToList();
+                            var visible = group.ToList();
                             if (visible.Count == 0) { continue; }
 
                             <li class="nav-item text-uppercase sidebar-group-header px-3 pt-3 pb-1 fs-6 tracking-wider">
@@ -171,7 +167,7 @@
                             </span>
                             <div class="flex-fill text-truncate me-2">
                                 <div class="text-white text-truncate fw-medium fs-5">@User.Identity?.Name</div>
-                                <div class="text-white-50 fs-6">@(isStudent ? "Sinh viên Nội trú" : isAdmin ? "Cán bộ Quản trị" : isAccountant ? "Cán bộ Kế toán" : "Cán bộ Kỹ thuật")</div>
+                                <div class="text-white-50 fs-6">@(isStudent ? "Sinh viên Nội trú" : "Cán bộ Quản trị KTX")</div>
                             </div>
                             <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
                                 <button type="submit" class="btn btn-icon btn-ghost-light btn-sm text-white-50" title="Đăng xuất" aria-label="Đăng xuất">

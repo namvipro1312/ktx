@@ -14,17 +14,14 @@ public sealed class DemoDataSeeder(QlKtxContext db, IPasswordHasher<user> hasher
         {
             foreach (var (code, name) in new[]
             {
-                ("system_admin", "Quản trị hệ thống"), ("dorm_manager", "Quản lý ký túc xá"),
-                ("student", "Sinh viên"), ("maintenance_staff", "Nhân viên sửa chữa"), ("accountant", "Kế toán")
+                ("system_admin", "Quản trị hệ thống"),
+                ("student", "Sinh viên")
             }) db.roles.Add(new role { code = code, name = name });
             await db.SaveChangesAsync();
         }
 
         // 2. Users & Demo Accounts
-        var admin = await EnsureUser("admin", "admin@qlktx.local", "Quản trị viên Demo", "Demo@123", "system_admin");
-        var manager = await EnsureUser("qlktx01", "qlktx01@qlktx.local", "Nguyen Van Quan Ly", "Demo@123", "dorm_manager");
-        var accountant = await EnsureUser("ketoan01", "ketoan01@qlktx.local", "Tran Thi Ke Toan", "Demo@123", "accountant");
-        var techStaff = await EnsureUser("ktv01", "ktv01@qlktx.local", "Le Van Ky Thuat", "Demo@123", "maintenance_staff");
+        var admin = await EnsureUser("admin", "admin@qlktx.local", "Quản trị viên KTX", "Demo@123", "system_admin");
         var studentUser1 = await EnsureUser("sv001", "sv001@qlktx.local", "Nguyễn Minh Anh", "Demo@123", "student");
         var studentUser2 = await EnsureUser("sv002", "sv002@qlktx.local", "Trần Văn Bình", "Demo@123", "student");
         var studentUser3 = await EnsureUser("sv003", "sv003@qlktx.local", "Lê Thị Thu Thảo", "Demo@123", "student");

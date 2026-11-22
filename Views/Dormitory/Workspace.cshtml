@@ -2,7 +2,7 @@
 @{
     ViewData["Title"] = Model.Title;
     ViewData["ActiveSection"] = Model.Section;
-    var isAdmin = User.IsInRole("system_admin") || User.IsInRole("dorm_manager");
+    var isAdmin = !User.IsInRole("student");
 }
 
 <!-- Workspace Page Header -->
