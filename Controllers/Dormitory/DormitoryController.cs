@@ -698,8 +698,8 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         .ToListAsync();
                     var contractMap = activeContracts2.GroupBy(x => x.student_id).ToDictionary(g => g.Key, g => g.First());
 
-                    model = Build("users", "Tài khoản và phân quyền", "Quản lý tài khoản sinh viên nội trú.",
-                        ["Tên đăng nhập", "Mã SV", "Họ tên", "Giới tính", "Khoa / Lớp", "Email", "SĐT", "Phòng hiện tại", "Trạng thái"],
+                    model = Build("users", "Tài khoản sinh viên", "Danh sách tài khoản và hồ sơ sinh viên nội trú.",
+                        ["Tài khoản", "Mã SV", "Họ tên", "Giới tính", "Khoa / Lớp", "Email", "SĐT", "Phòng", "Trạng thái"],
                         studentUsers.Select(x => {
                             var s = x.student!;
                             var roomInfo = "—";
@@ -723,7 +723,7 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                                 x.is_active ? "Đang hoạt động" : "Đã khóa"
                             ], x.is_active ? "active" : "inactive", actions);
                         }).ToList(),
-                        "Tạo tài khoản sinh viên", "Tạo tài khoản cho sinh viên mới đăng ký nội trú.",
+                        "Thêm sinh viên", "Cấp tài khoản đăng nhập cho sinh viên nội trú.",
                         [new("username", "Tên đăng nhập"), new("fullName", "Họ tên"), new("email", "Email", "email", false), new("password", "Mật khẩu", "password")]);
                     // Force student role when creating from student tab
                     var studentRole = await db.roles.FirstOrDefaultAsync(r => r.code == "student");
@@ -740,8 +740,8 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                         .OrderBy(x => x.username)
                         .ToListAsync();
 
-                    model = Build("users", "Tài khoản và phân quyền", "Quản lý tài khoản nhân viên & quản trị viên.",
-                        ["Tên đăng nhập", "Họ tên", "Email", "SĐT", "Vai trò", "Lần đăng nhập", "Trạng thái"],
+                    model = Build("users", "Tài khoản nhân viên", "Danh sách tài khoản ban quản lý và quản trị viên.",
+                        ["Tài khoản", "Họ tên", "Email", "SĐT", "Vai trò", "Đăng nhập cuối", "Trạng thái"],
                         staffUsers.Select(x => {
                             var actions = new List<RowActionViewModel>();
                             if (x.id != UserId)
@@ -760,15 +760,15 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                                 x.is_active ? "Đang hoạt động" : "Đã khóa"
                             ], x.is_active ? "active" : "inactive", actions);
                         }).ToList(),
-                        "Tạo tài khoản nhân viên", "Tài khoản demo đã có mật khẩu mẫu; đổi mật khẩu trước khi triển khai thật.",
+                        "Thêm nhân viên", "Cấp tài khoản mới cho nhân sự quản lý KTX.",
                         [new("username", "Tên đăng nhập"), new("fullName", "Họ tên"), new("email", "Email", "email", false), new("password", "Mật khẩu", "password"), new("roleId", "Vai trò", "select", true, allDbRoles)]);
                 }
 
                 model.SystemRoles = allDbRoles;
                 model.ActiveStation = userStation;
                 model.Stations = [
-                    new StationViewModel("staff", "Nhân viên quản lý", staffCount, "blue"),
-                    new StationViewModel("students", "Sinh viên nội trú", studentCount, "green")
+                    new StationViewModel("staff", "Nhân viên", staffCount, "blue"),
+                    new StationViewModel("students", "Sinh viên", studentCount, "green")
                 ];
                 break;
             default:

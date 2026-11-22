@@ -6,11 +6,10 @@
 }
 
 <!-- Workspace Page Header -->
-<div class="page-header d-print-none mb-3">
+<div class="page-header d-print-none mb-4">
     <div class="row g-2 align-items-center">
         <div class="col">
-            <div class="page-pretitle text-muted text-uppercase">PHÂN HỆ NGHIỆP VỤ</div>
-            <h2 class="page-title text-dark fw-bold">@Model.Title</h2>
+            <h2 class="page-title text-dark fw-bold mb-1">@Model.Title</h2>
             <p class="text-muted mb-0">@Model.Description</p>
         </div>
         <div class="col-auto ms-auto d-print-none">
@@ -20,7 +19,7 @@
                 </span>
                 @if (Model.FormTitle is not null)
                 {
-                    <a class="btn btn-primary" href="#create-form">
+                    <a class="btn btn-primary shadow-sm" href="#create-form">
                         <i class="ti ti-plus me-1"></i> @Model.FormTitle
                     </a>
                 }
@@ -1527,17 +1526,17 @@
 {
     @if (Model.Stations.Count > 0)
     {
-        <div class="card mb-3 border-0 shadow-sm">
-            <div class="card-body py-2 px-3">
+        <div class="mb-4 d-flex align-items-center">
+            <div class="bg-white p-1 rounded-pill shadow-sm border d-inline-flex">
                 <ul class="nav nav-pills">
                     @foreach (var st in Model.Stations)
                     {
                         var isActive = (Model.ActiveStation ?? "").Equals(st.Key, StringComparison.OrdinalIgnoreCase);
                         <li class="nav-item">
-                            <a class="nav-link @(isActive ? "active" : "") fw-bold py-2 px-3" href="/Dormitory/Workspace?section=@Model.Section&station=@st.Key">
-                                <i class="ti @(st.Key == "staff" ? "ti-user-shield" : "ti-school") me-1"></i>
+                            <a class="nav-link @(isActive ? "active bg-primary text-white shadow-sm" : "text-muted") fw-semibold py-2 px-4 rounded-pill" href="/Dormitory/Workspace?section=@Model.Section&station=@st.Key">
+                                <i class="ti @(st.Key == "staff" ? "ti-shield" : "ti-school") me-1"></i>
                                 @st.Label
-                                <span class="badge ms-2 @(isActive ? "bg-white text-primary" : "bg-secondary-lt")">@st.Count</span>
+                                <span class="badge ms-2 @(isActive ? "bg-white text-primary fw-bold" : "bg-light text-secondary")">@st.Count</span>
                             </a>
                         </li>
                     }
@@ -1546,18 +1545,18 @@
         </div>
     }
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white py-3">
+    <div class="card shadow-sm border mb-4 rounded-3">
+        <div class="card-header bg-white py-3 px-4 border-bottom">
             <div class="row align-items-center g-2">
                 <div class="col-md-5">
                     <h3 class="card-title fw-bold mb-0">
                         <i class="ti ti-table text-primary me-2"></i>
-                        @(Model.Section == "repairs" ? "Yêu cầu sửa chữa mới nhất" : Model.Section == "rooms" ? "Danh sách chi tiết phòng" : Model.Section == "users" ? (Model.ActiveStation == "students" ? "Danh sách tài khoản & thông tin sinh viên nội trú" : "Danh sách tài khoản & phân quyền nhân viên") : "Danh sách bản ghi hiện có")
+                        @(Model.Section == "repairs" ? "Yêu cầu sửa chữa" : Model.Section == "rooms" ? "Chi tiết phòng" : Model.Section == "users" ? (Model.ActiveStation == "students" ? "Danh sách sinh viên" : "Danh sách nhân viên") : "Danh sách bản ghi")
                     </h3>
                 </div>
                 <div class="col-md-7 text-md-end">
                     <div class="d-flex flex-wrap justify-content-md-end align-items-center gap-2">
-                        <input type="search" class="form-control form-control-sm w-auto" data-table-search placeholder="Tìm mã, tên hoặc nội dung..." autocomplete="off" />
+                        <input type="search" class="form-control form-control-sm w-auto" data-table-search placeholder="Tìm kiếm..." autocomplete="off" />
                         <select class="form-select form-select-sm w-auto" data-table-status>
                             <option value="">Tất cả trạng thái</option>
                             @foreach (var state in Model.Rows.Select(x => x.State).Distinct().OrderBy(x => x))
@@ -1957,8 +1956,8 @@
 }
 else if (Model.FormTitle is not null && Model.Fields.Count > 0)
 {
-    <div class="card shadow-sm border-0 mb-4" id="create-form">
-        <div class="card-header bg-white py-3">
+    <div class="card shadow-sm border mb-5 rounded-3" id="create-form">
+        <div class="card-header bg-white py-3 px-4 border-bottom">
             <div class="d-flex align-items-center">
                 <span class="avatar avatar-sm bg-primary-lt text-primary rounded me-2">
                     <i class="ti ti-plus fs-2"></i>
