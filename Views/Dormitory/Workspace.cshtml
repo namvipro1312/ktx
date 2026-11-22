@@ -1525,13 +1525,34 @@
 <!-- ============================================== -->
 @if (!Model.RoomGroups.Any() && Model.Section != "registrations" && Model.Section != "reports")
 {
+    @if (Model.Stations.Count > 0)
+    {
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-body py-2 px-3">
+                <ul class="nav nav-pills">
+                    @foreach (var st in Model.Stations)
+                    {
+                        var isActive = (Model.ActiveStation ?? "").Equals(st.Key, StringComparison.OrdinalIgnoreCase);
+                        <li class="nav-item">
+                            <a class="nav-link @(isActive ? "active" : "") fw-bold py-2 px-3" href="/Dormitory/Workspace?section=@Model.Section&station=@st.Key">
+                                <i class="ti @(st.Key == "staff" ? "ti-user-shield" : "ti-school") me-1"></i>
+                                @st.Label
+                                <span class="badge ms-2 @(isActive ? "bg-white text-primary" : "bg-secondary-lt")">@st.Count</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-white py-3">
             <div class="row align-items-center g-2">
                 <div class="col-md-5">
                     <h3 class="card-title fw-bold mb-0">
                         <i class="ti ti-table text-primary me-2"></i>
-                        @(Model.Section == "repairs" ? "Yêu cầu sửa chữa mới nhất" : Model.Section == "rooms" ? "Danh sách chi tiết phòng" : "Danh sách bản ghi hiện có")
+                        @(Model.Section == "repairs" ? "Yêu cầu sửa chữa mới nhất" : Model.Section == "rooms" ? "Danh sách chi tiết phòng" : Model.Section == "users" ? (Model.ActiveStation == "students" ? "Danh sách tài khoản & thông tin sinh viên nội trú" : "Danh sách tài khoản & phân quyền nhân viên") : "Danh sách bản ghi hiện có")
                     </h3>
                 </div>
                 <div class="col-md-7 text-md-end">
@@ -1657,6 +1678,10 @@
                                                 {
                                                     <form asp-controller="Dormitory" asp-action="Process" method="post" class="m-0">
                                                         <input type="hidden" name="section" value="@Model.Section" />
+                                                        @if (!string.IsNullOrEmpty(Model.ActiveStation))
+                                                        {
+                                                            <input type="hidden" name="station" value="@Model.ActiveStation" />
+                                                        }
                                                         <input type="hidden" name="id" value="@row.Id" />
                                                         <input type="hidden" name="operation" value="@action.Operation" />
                                                         <button class="btn btn-sm @(action.Primary ? "btn-primary" : "btn-outline-secondary")" type="submit">
@@ -1947,9 +1972,18 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
         <div class="card-body p-4">
             <form asp-controller="Dormitory" asp-action="Create" method="post">
                 <input type="hidden" name="section" value="@Model.Section" />
+                @if (!string.IsNullOrEmpty(Model.ActiveStation))
+                {
+                    <input type="hidden" name="station" value="@Model.ActiveStation" />
+                }
                 <div class="row g-3">
                     @foreach (var field in Model.Fields)
                     {
+                        if (field.Type == "hidden")
+                        {
+                            <input type="hidden" name="@field.Name" value="@(field.Options.FirstOrDefault()?.Value ?? "")" />
+                            continue;
+                        }
                         var isFullWidth = field.Type == "textarea" || field.Name.Contains("note") || field.Name.Contains("address");
                         <div class="@(isFullWidth ? "col-12" : "col-md-6 col-lg-4")">
                             <label class="form-label fw-semibold">
@@ -2239,6 +2273,10 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
     <div class="modal-dialog">
         <form asp-controller="Dormitory" asp-action="Process" method="post" class="modal-content">
             <input type="hidden" name="section" value="users" />
+            @if (!string.IsNullOrEmpty(Model.ActiveStation))
+            {
+                <input type="hidden" name="station" value="@Model.ActiveStation" />
+            }
             <input type="hidden" name="id" id="userRoleId" />
             <input type="hidden" name="operation" value="user-edit-role" />
             <div class="modal-header">
@@ -2279,6 +2317,10 @@ else if (Model.FormTitle is not null && Model.Fields.Count > 0)
     <div class="modal-dialog">
         <form asp-controller="Dormitory" asp-action="Process" method="post" class="modal-content">
             <input type="hidden" name="section" value="users" />
+            @if (!string.IsNullOrEmpty(Model.ActiveStation))
+            {
+                <input type="hidden" name="station" value="@Model.ActiveStation" />
+            }
             <input type="hidden" name="id" id="resetPwdUserId" />
             <input type="hidden" name="operation" value="user-reset-pwd" />
             <div class="modal-header">

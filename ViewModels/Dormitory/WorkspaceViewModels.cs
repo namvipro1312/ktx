@@ -61,6 +61,8 @@ public sealed class ModuleViewModel
     public string Title { get; set; } = "";
     public string Description { get; set; } = "";
     public string CountLabel { get; set; } = "";
+    public string? ActiveStation { get; set; }
+    public List<StationViewModel> Stations { get; set; } = [];
     public List<string> Columns { get; set; } = [];
     public List<ModuleRowViewModel> Rows { get; set; } = [];
     public List<FormFieldViewModel> Fields { get; set; } = [];

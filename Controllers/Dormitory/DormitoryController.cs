@@ -672,19 +672,104 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
                 break;
             case "users":
                 if (!IsSystemAdmin) return Forbid();
-                var users = await db.users.Include(x => x.user_roles).ThenInclude(x => x.role).OrderBy(x => x.username).ToListAsync();
+                var userStation = (station ?? "staff").ToLowerInvariant();
                 var allDbRoles = await db.roles.OrderBy(r => r.name).Select(x => new SelectOptionViewModel(x.id.ToString(), x.name)).ToListAsync();
-                model = Build("users", "Tài khoản và phân quyền", "Tài khoản được gắn vai trò từ ma trận quyền của cơ sở dữ liệu.", ["Tên đăng nhập", "Họ tên", "Email", "Vai trò", "Lần đăng nhập", "Trạng thái"], users.Select(x => {
-                    var actions = new List<RowActionViewModel>();
-                    if (x.id != UserId)
-                    {
-                        actions.Add(new RowActionViewModel("Phân quyền", "user-edit-role", true));
-                        actions.Add(new RowActionViewModel("Đổi MK", "user-reset-pwd", false));
-                        actions.Add(new RowActionViewModel(x.is_active ? "Khóa" : "Mở khóa", "user-toggle"));
-                    }
-                    return Row(x.id, [x.username, x.full_name, x.email ?? "—", string.Join(", ", x.user_roles.Select(r => r.role.name)), x.last_login_at?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập", x.is_active ? "Đang hoạt động" : "Đã khóa"], x.is_active ? "active" : "inactive", actions);
-                }).ToList(), "Tạo tài khoản", "Tài khoản demo đã có mật khẩu mẫu; đổi mật khẩu trước khi triển khai thật.", [new("username", "Tên đăng nhập"), new("fullName", "Họ tên"), new("email", "Email", "email", false), new("password", "Mật khẩu", "password"), new("roleId", "Vai trò", "select", true, allDbRoles)]);
+
+                // Count for tabs
+                var allUsersForCount = await db.users.Include(x => x.student).Include(x => x.user_roles).ThenInclude(x => x.role).ToListAsync();
+                var staffCount = allUsersForCount.Count(u => u.student == null);
+                var studentCount = allUsersForCount.Count(u => u.student != null);
+
+                if (userStation == "students")
+                {
+                    // TAB SINH VIÊN: users có student record, include contract->bed->room->building
+                    var studentUsers = await db.users
+                        .Include(x => x.student)
+                        .Include(x => x.user_roles).ThenInclude(x => x.role)
+                        .Where(x => x.student != null)
+                        .OrderBy(x => x.student!.student_code)
+                        .ToListAsync();
+
+                    // Get active contracts for room info
+                    var studentIds = studentUsers.Where(x => x.student != null).Select(x => x.student!.id).ToList();
+                    var activeContracts2 = await db.contracts
+                        .Include(x => x.bed).ThenInclude(x => x.room).ThenInclude(x => x.building)
+                        .Where(x => studentIds.Contains(x.student_id) && x.status == "active")
+                        .ToListAsync();
+                    var contractMap = activeContracts2.GroupBy(x => x.student_id).ToDictionary(g => g.Key, g => g.First());
+
+                    model = Build("users", "Tài khoản và phân quyền", "Quản lý tài khoản sinh viên nội trú.",
+                        ["Tên đăng nhập", "Mã SV", "Họ tên", "Giới tính", "Khoa / Lớp", "Email", "SĐT", "Phòng hiện tại", "Trạng thái"],
+                        studentUsers.Select(x => {
+                            var s = x.student!;
+                            var roomInfo = "—";
+                            if (contractMap.TryGetValue(s.id, out var c))
+                                roomInfo = $"{c.bed.room.building.name} - P.{c.bed.room.room_number} ({c.bed.bed_number})";
+                            var actions = new List<RowActionViewModel>();
+                            if (x.id != UserId)
+                            {
+                                actions.Add(new RowActionViewModel("Đổi MK", "user-reset-pwd", false));
+                                actions.Add(new RowActionViewModel(x.is_active ? "Khóa" : "Mở khóa", "user-toggle"));
+                            }
+                            return Row(x.id, [
+                                x.username,
+                                s.student_code,
+                                x.full_name,
+                                s.gender == "female" ? "Nữ" : s.gender == "male" ? "Nam" : "—",
+                                $"{s.faculty ?? "—"}{(s.course_year.HasValue ? $" (K{s.course_year})" : "")}",
+                                x.email ?? "—",
+                                x.phone ?? "—",
+                                roomInfo,
+                                x.is_active ? "Đang hoạt động" : "Đã khóa"
+                            ], x.is_active ? "active" : "inactive", actions);
+                        }).ToList(),
+                        "Tạo tài khoản sinh viên", "Tạo tài khoản cho sinh viên mới đăng ký nội trú.",
+                        [new("username", "Tên đăng nhập"), new("fullName", "Họ tên"), new("email", "Email", "email", false), new("password", "Mật khẩu", "password")]);
+                    // Force student role when creating from student tab
+                    var studentRole = await db.roles.FirstOrDefaultAsync(r => r.code == "student");
+                    if (studentRole != null)
+                        model.Fields.Add(new FormFieldViewModel("roleId", "", "hidden", false, [new(studentRole.id.ToString(), "student")]));
+                }
+                else
+                {
+                    // TAB NHÂN VIÊN: users không có student record
+                    var staffUsers = await db.users
+                        .Include(x => x.user_roles).ThenInclude(x => x.role)
+                        .Include(x => x.student)
+                        .Where(x => x.student == null)
+                        .OrderBy(x => x.username)
+                        .ToListAsync();
+
+                    model = Build("users", "Tài khoản và phân quyền", "Quản lý tài khoản nhân viên & quản trị viên.",
+                        ["Tên đăng nhập", "Họ tên", "Email", "SĐT", "Vai trò", "Lần đăng nhập", "Trạng thái"],
+                        staffUsers.Select(x => {
+                            var actions = new List<RowActionViewModel>();
+                            if (x.id != UserId)
+                            {
+                                actions.Add(new RowActionViewModel("Phân quyền", "user-edit-role", true));
+                                actions.Add(new RowActionViewModel("Đổi MK", "user-reset-pwd", false));
+                                actions.Add(new RowActionViewModel(x.is_active ? "Khóa" : "Mở khóa", "user-toggle"));
+                            }
+                            return Row(x.id, [
+                                x.username,
+                                x.full_name,
+                                x.email ?? "—",
+                                x.phone ?? "—",
+                                string.Join(", ", x.user_roles.Select(r => r.role.name)),
+                                x.last_login_at?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa đăng nhập",
+                                x.is_active ? "Đang hoạt động" : "Đã khóa"
+                            ], x.is_active ? "active" : "inactive", actions);
+                        }).ToList(),
+                        "Tạo tài khoản nhân viên", "Tài khoản demo đã có mật khẩu mẫu; đổi mật khẩu trước khi triển khai thật.",
+                        [new("username", "Tên đăng nhập"), new("fullName", "Họ tên"), new("email", "Email", "email", false), new("password", "Mật khẩu", "password"), new("roleId", "Vai trò", "select", true, allDbRoles)]);
+                }
+
                 model.SystemRoles = allDbRoles;
+                model.ActiveStation = userStation;
+                model.Stations = [
+                    new StationViewModel("staff", "Nhân viên quản lý", staffCount, "blue"),
+                    new StationViewModel("students", "Sinh viên nội trú", studentCount, "green")
+                ];
                 break;
             default:
                 return RedirectToAction(nameof(Workspace), new { section = "rooms" });
@@ -1633,7 +1718,14 @@ public sealed class DormitoryController(QlKtxContext db, IPasswordHasher<user> h
         var studentId = await StudentId();
         return await db.contracts.Include(x => x.bed).ThenInclude(x => x.room).FirstOrDefaultAsync(x => x.student_id == studentId && x.status == "active") ?? throw new InvalidOperationException("Bạn chưa có hợp đồng lưu trú đang hoạt động.");
     }
-    private IActionResult Done(string message, string section) { TempData["Notice"] = message; return RedirectToAction(nameof(Workspace), new { section }); }
+    private IActionResult Done(string message, string section)
+    {
+        TempData["Notice"] = message;
+        var station = Request.HasFormContentType && Request.Form.ContainsKey("station") ? Request.Form["station"].ToString() : null;
+        return string.IsNullOrEmpty(station)
+            ? RedirectToAction(nameof(Workspace), new { section })
+            : RedirectToAction(nameof(Workspace), new { section, station });
+    }
     private void Audit(string action, string entityType, long? entityId, string? value)
     {
         db.audit_logs.Add(new audit_log { user_id = UserId, action = action, entity_type = entityType, entity_id = entityId, new_values = value, ip_address = HttpContext.Connection.RemoteIpAddress?.ToString(), user_agent = Request.Headers.UserAgent.ToString(), created_at = DateTime.Now });
